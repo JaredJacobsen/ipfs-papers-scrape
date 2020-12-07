@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      button {
+        height: 30px;
+        width: 50px;
+        outline: none;
+      }
+    </style>
+  </head>
+  <body>
+    <button id="changeColor"></button>
+    <script src="lib/scrape.js"></script>
+    <!-- <img src="chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/e8641e36-00da-4be9-b870-1945ecea13e2"> -->
+    <embed
+      id="plugin"
+      type="application/x-google-chrome-pdf"
+      src="file:///home/jaredjacobsen/Downloads/paper.pdf"
+      stream-url="chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/e8641e36-00da-4be9-b870-1945ecea13e2"
+      headers=""
+      background-color="0xFF525659"
+      top-toolbar-height="56"
+      javascript="allow"
+      full-frame=""
+    />
+  </body>
+</html>
