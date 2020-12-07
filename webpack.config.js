@@ -1,7 +1,9 @@
 const path = require("path");
 
 module.exports = {
-  mode: "development",
+  // entry: ["babel-polyfill", "./test.js"],
+  devtool: "cheap-module-source-map",
+  // mode: "development",
   entry: {
     main: "./src/index.js",
     // content_script: "./src/content_script.js"
@@ -18,7 +20,8 @@ module.exports = {
         use: {
           loader: "babel-loader",
           options: {
-            presets: ["@babel/preset-env"],
+            presets: ["@babel/preset-env", "@babel/preset-react"],
+            plugins: ["@babel/transform-runtime"],
           },
         },
       },
