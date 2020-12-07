@@ -1,8 +1,10 @@
 const path = require("path");
+const webpack = require("webpack");
+// const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
 
 module.exports = {
   // entry: ["babel-polyfill", "./test.js"],
-  devtool: "cheap-module-source-map",
+  // devtool: "cheap-module-source-map",
   // mode: "development",
   entry: {
     main: "./src/index.js",
@@ -27,26 +29,35 @@ module.exports = {
       },
     ],
   },
+  plugins: [
+    // new NodePolyfillPlugin(),
+    new webpack.ProvidePlugin({
+      Buffer: ["buffer", "Buffer"],
+      process: "process/browser",
+    }),
+  ],
   resolve: {
-    alias: {
-      stream: "stream-browserify",
-      util: "util",
-      url: "url",
-      assert: "assert",
+    // modules: [path.resolve("./node_modules")],
+    // alias: {
+    //   stream: "stream-browserify",
+    //   util: "util",
+    //   url: "url",
+    //   assert: "assert",
+    //   process: "process/browser",
+    // },
+    fallback: {
+      util: require.resolve("util/"),
+      url: require.resolve("url/"),
+      stream: require.resolve("stream-browserify"),
+      assert: require.resolve("assert/"),
+      // process: require.resolve("process/browser"),
     },
+    // extensions: [".js", ".jsx", ".json", ".scss"],
+    // },
+    // node: {
+    //   fs: "empty",
+    //   net: "empty",
+    //   tls: "empty",
   },
-  // resolve: {
-  //   fallback: {
-  //     util: require.resolve("util/"),
-  //     url: require.resolve("url/"),
-  //     stream: require.resolve("stream-browserify"),
-  //     assert: require.resolve("assert/"),
-  //   },
-  // },
-  // node: {
-  //   fs: "empty",
-  //   net: "empty",
-  //   tls: "empty",
-  // },
   watch: true,
 };
