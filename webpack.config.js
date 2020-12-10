@@ -50,6 +50,7 @@ module.exports = {
       url: require.resolve("url/"),
       stream: require.resolve("stream-browserify"),
       assert: require.resolve("assert/"),
+      path: require.resolve("path-browserify"),
       // process: require.resolve("process/browser"),
     },
     // extensions: [".js", ".jsx", ".json", ".scss"],

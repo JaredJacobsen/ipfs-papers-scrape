@@ -1,22 +1,22 @@
 // import IPFS from "ipfs";
 // import Room from "ipfs-pubsub-room";
 
-function addPaper(text) {
-  const bkg = chrome.extension.getBackgroundPage();
-  bkg.console.log(text.selectionText);
-}
+// function addPaper(text) {
+//   const bkg = chrome.extension.getBackgroundPage();
+//   bkg.console.log(text.selectionText);
+// }
 
-chrome.contextMenus.create({
-  id: "addPaper",
-  title: "Add paper to IPFS-Papers",
-  contexts: ["selection"],
-});
+// chrome.contextMenus.create({
+//   id: "addPaper",
+//   title: "Add paper to IPFS-Papers",
+//   contexts: ["selection"],
+// });
 
-chrome.contextMenus.onClicked.addListener(function (info, tab) {
-  if (info.menuItemId == "addPaper") {
-    console.log(JSON.stringify(info));
-  }
-});
+// chrome.contextMenus.onClicked.addListener(function (info, tab) {
+//   if (info.menuItemId == "addPaper") {
+//     console.log(JSON.stringify(info));
+//   }
+// });
 
 // const ipfsOptions = {
 //   // repo: "./ipfs"
