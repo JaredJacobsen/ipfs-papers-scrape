@@ -1,5 +1,7 @@
 # ipfs-papers-scrape
 
+chrome-extension://nmdkebiopcgmbkhkcpeiedopnalmkbnf
+
 Run `npx webpack` to compile the src javascript to dist. It watches for changes automatically
 
 Don't forget to make sure ipfs node is running and CORS is allowed as follows:

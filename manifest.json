@@ -3,7 +3,7 @@
   "version": "1.0",
   "description": "Scrapes a paper in the current tab and adds it to IPFS",
   "background": {
-    "scripts": ["src/background.js"],
+    "scripts": ["dist/background.js"],
     "persistent": false
   },
   "browser_action": {

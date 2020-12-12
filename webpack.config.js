@@ -7,7 +7,7 @@ module.exports = {
   // devtool: "cheap-module-source-map",
   // mode: "development",
   entry: {
-    main: "./src/index.js",
+    popup: "./src/popup.js",
     background: "./src/background.js",
   },
   output: {
