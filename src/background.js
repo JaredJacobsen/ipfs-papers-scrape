@@ -1,10 +1,11 @@
 // import IPFS from "ipfs";
 // import Room from "ipfs-pubsub-room";
 
-// function addPaper(text) {
-//   const bkg = chrome.extension.getBackgroundPage();
-//   bkg.console.log(text.selectionText);
-// }
+function scrapePaper(text) {
+  console.log("called scrapePaper");
+}
+
+window.scrapePaper = scrapePaper;
 
 // chrome.contextMenus.create({
 //   id: "addPaper",
