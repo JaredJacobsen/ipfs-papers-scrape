@@ -10,3 +10,5 @@ ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["chrome-extensi
 ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "POST", "GET"]'
 
 Run `node corsProxy.js` to start The CORS anywhere server. PDFs cannot be fetched without this server running.
+
+The IPFS companion extension is needed in order to view PDFs

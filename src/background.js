@@ -3,6 +3,7 @@
 // import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
 import { pick } from "ramda";
 import axios from "axios";
+import { v4 as uuidv4 } from "uuid";
 import IpfsHttpClient from "ipfs-http-client";
 const ipfs = IpfsHttpClient("http://localhost:5001");
 
@@ -156,12 +157,15 @@ function transformUnpaywallData(data) {
   return metadata;
 }
 
+//This function must match that in https://github.com/JaredJacobsen/ipfs-papers-react-native
 function getPaperFilename(title) {
-  return title
+  const base = title
     .trim()
     .replace(/\s+/g, "-")
     .toLowerCase()
     .replace(/[^\w-]/g, "");
+
+  return base + "-" + uuidv4();
 }
 
 async function addPaperToIpfs(filename, obj) {
@@ -185,7 +189,7 @@ async function addPaperToIpfs(filename, obj) {
       // const cid = await ipfs.add(urlSource(obj.url_for_pdf));
       const cid = await fetchPdf("http://127.0.0.1:9999/" + obj.url_for_pdf);
       console.log(cid);
-      const mfsPdfPath = PDF_FILES_DIR + filename;
+      const mfsPdfPath = PDF_FILES_DIR + filename + ".pdf";
       try {
         await ipfs.files.cp("/ipfs/" + cid, mfsPdfPath, {
           create: "true",
@@ -215,6 +219,7 @@ async function fetchPdf(url) {
     const res = await axios({
       method: "get",
       url,
+      responseType: "blob",
     });
     const data = res.data;
     const { cid } = await ipfs.add(data);
