@@ -1,7 +1,7 @@
 // import Tesseract from "tesseract.js";
 // import * as pdfjsLib from "pdfjs-dist";
 // import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
-import { pick } from "ramda";
+import { pick } from "lodash/fp";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 import IpfsHttpClient from "ipfs-http-client";
@@ -10,17 +10,11 @@ const ipfs = IpfsHttpClient("http://localhost:5001");
 const PAPERS_DIR = "/ipfs-papers/papers/";
 const PDF_FILES_DIR = "/ipfs-papers/pdf_files/";
 
-// function scrapePaper() {
-//   console.log("called scrapePaper");
-//   popupDocument.body.append("some t");
-//   setTimeout(() => {
-//     popupDocument.body.append("another t");
-//   }, 3000);
-// }
+//#region scrape paper
 
 async function scrapePaper() {
   try {
-    await ipfs.id();
+    await ipfs.id(); //Checks if IPFS is alive
     _scrapePaper();
   } catch (error) {
     console.log("Failed to scrape paper: ", error);
@@ -33,17 +27,25 @@ async function scrapePaper() {
 window.scrapePaper = scrapePaper;
 
 async function _scrapePaper() {
+  console.log("scrapepaper");
   chrome.tabs.query({ active: true, lastFocusedWindow: true }, async (tabs) => {
     let url = tabs[0].url;
     console.log("current url: ", url);
 
     let content;
-    // try {
     if (url.slice(-4) === ".pdf") {
       content = await extractTextFromPdf(url);
       savePdf(content);
     } else {
-      chrome.runtime.onMessage.addListener(async (request, sender) => {
+      chrome.runtime.onMessage.addListener(async function getHtml(
+        request,
+        sender
+      ) {
+        console.log(
+          "🚀 ~ file: background.js ~ line 48 ~ chrome.runtime.onMessage.addListener ~ request",
+          request
+        );
+        chrome.runtime.onMessage.removeListener(getHtml);
         if (request.action == "getHtml") {
           content = request.html;
           await savePdf(content);
@@ -52,13 +54,9 @@ async function _scrapePaper() {
 
       chrome.tabs.executeScript(tabs[0].id, {
         code:
-          'const html = document.documentElement.outerHTML; chrome.runtime.sendMessage({action: "getHtml", html: html});',
+          'chrome.runtime.sendMessage({action: "getHtml", html: document.documentElement.outerHTML});',
       });
     }
-    // } catch (error) {
-    //   console.log("Failed to fetch contents of paper: ", error);
-    //   throw error;
-    // }
   });
 }
 
@@ -68,13 +66,6 @@ async function extractTextFromPdf(pdfUrl) {
 
     const doc = await pdfjsLib.getDocument(pdfUrl).promise;
     const data = await doc.getMetadata();
-
-    // console.log("## Info");
-    // console.log(JSON.stringify(data.info, null, 2));
-    // if (data.metadata) {
-    //   console.log("## Metadata");
-    //   console.log(JSON.stringify(data.metadata.getAll(), null, 2));
-    // }
 
     async function getPageText(pageNum) {
       const page = await doc.getPage(pageNum);
@@ -94,8 +85,12 @@ async function savePdf(content) {
   const doi = extractDoi(content);
   popupDocument.body.append("\ndoi: " + doi + "\n");
 
-  const metadata = transformUnpaywallData(await fetchUnpaywallData(doi));
-  console.log("metadata: ", metadata);
+  const unpaywallData = await fetchUnpaywallData(doi);
+  const metadata = transformUnpaywallData(unpaywallData);
+  console.log(
+    "🚀 ~ file: background.js ~ line 99 ~ savePdf ~ metadata",
+    metadata
+  );
 
   popupDocument.body.append(
     "\nscraped paper! " + JSON.stringify(metadata) + "\n"
@@ -231,9 +226,9 @@ async function fetchPdf(url) {
   }
 }
 
-////////////////////////////////////////////////////////////
-// OCR
-////////////////////////////////////////////////////////////
+//#endregion scrape paper
+
+//#region OCR
 
 // Tesseract.recognize("http://tesseract.projectnaptha.com/img/eng_bw.png", {
 //   logger: (m) => bkg.console.log(m),
@@ -250,9 +245,9 @@ async function fetchPdf(url) {
 // popupDocument.body.prepend(DOM_img);
 // });
 
-///////////////////////////////////////////////////////////
-// CONTEXT MENUS
-///////////////////////////////////////////////////////////
+//#endregion
+
+//#region context menu
 
 // chrome.contextMenus.create({
 //   id: "addPaper",
@@ -286,3 +281,5 @@ async function fetchPdf(url) {
 //     console.log("Now connected!");
 //   });
 // });
+
+//#endregion
