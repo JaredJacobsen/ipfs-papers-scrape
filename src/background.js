@@ -2,90 +2,85 @@
 // import * as pdfjsLib from "pdfjs-dist";
 // import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
 import { pick } from "lodash/fp";
-import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 import IpfsHttpClient from "ipfs-http-client";
+import isPdf from "./utils/is-pdf";
 const ipfs = IpfsHttpClient("http://localhost:5001");
 
 const PAPERS_DIR = "/ipfs-papers/papers/";
 const PDF_FILES_DIR = "/ipfs-papers/pdf_files/";
 const SCIHUB_URL = "https://sci-hub.do/";
+const UNPAYWALL_URL = "https://api.unpaywall.org/v2/";
 
 //#region scrape paper
 
 async function scrapePaper() {
-  console.log("Scraping paper...");
   try {
     await ipfs.id(); //Check if IPFS is alive. Throws if not
-
-    chrome.tabs.query(
-      { active: true, lastFocusedWindow: true },
-      async (tabs) => {
-        const { url } = tabs[0];
-        let pageContent;
-
-        if (url.slice(-4) === ".pdf") {
-          pageContent = await extractTextFromPdf(url);
-          savePaper(pageContent);
-        } else {
-          chrome.tabs.executeScript(
-            tabs[0].id,
-            {
-              code: "document.documentElement.outerHTML",
-            },
-            (pageContent) => savePaper(pageContent)
-          );
-        }
-      }
-    );
   } catch (error) {
-    console.log("Failed to scrape paper: ", error);
+    console.log("IPFS unreachable at http://localhost:5001");
     popupDocument.body.append(
-      "\nUnable to reach IPFS. Make sure that IPFS is running at http://localhost:5001\n"
+      `
+      Unable to reach IPFS. Make sure that IPFS is running at http://localhost:5001
+      `
     );
+  }
+
+  try {
+    chrome.tabs.query({ active: true, lastFocusedWindow: true }, _scrapePaper);
+  } catch (error) {
+    console.log("Failed to scrape paper");
+    console.log(error);
   }
 }
 
 window.scrapePaper = scrapePaper; //popup.js can't access the scrapePaper function unless it is on the window
 
-async function savePaper(pageContent) {
-  //#region get metadata
+async function _scrapePaper(tabs) {
+  const { url } = tabs[0];
+  const response = await fetch(url);
 
-  console.log("Fetching metadata...");
-  const doi = extractDoi(pageContent);
+  const pageText = isPdf(await response.arrayBuffer())
+    ? await extractTextFromPdf(url)
+    : await response.text();
+
+  const doi = extractDoi(pageText);
   if (!doi) throw "Cannot find paper DOI number";
 
-  popupDocument.body.append(`\nScraped DOI: ${doi}\n`);
-
-  const metadata = await fetchAndStandardizeUnpaywallData(doi);
-
-  popupDocument.body.append(`\nTitle: ${metadata.title}\n`);
-
-  //#endregion get metadata
-
-  //#region save metadata
+  console.log("Fetching metadata...");
+  const metadata = await fetchMetadata(doi);
 
   console.log("Saving metadata: ", metadata);
+  const mfsFilename = await saveMetadata(metadata);
 
-  const filename = getPaperFilename(metadata.title);
+  popupDocument.body.append(
+    `
+    Saved metadata To IPFS:
+
+    Title: ${metadata.title}
+    DOI: ${doi}
+    `
+  );
+
+  console.log("fetching pdf...");
+  await fetchPdf(mfsFilename, metadata);
+}
+
+async function saveMetadata(metadata) {
+  const mfsFilename = getMfsFilenameForPaper(metadata.title);
   try {
-    await ipfs.files.write(PAPERS_DIR + filename, JSON.stringify(metadata), {
+    await ipfs.files.write(PAPERS_DIR + mfsFilename, JSON.stringify(metadata), {
       create: "true",
       parents: "true",
     });
   } catch (error) {
-    console.log("Failed to save paper metadata: ", error);
+    console.log("Failed to save paper metadata");
     throw error;
   }
+  return mfsFilename;
+}
 
-  popupDocument.body.append(`\nSaved Paper to IPFS\n`);
-
-  //#endregion save metadata
-
-  //#region save pdf
-
-  console.log("fetching pdf...");
-
+async function fetchPdf(MfsFilename, metadata) {
   const fetchFromScihub = !metadata.url_for_pdf; //TODO check if settings allow scihub
   const createTabUrl = fetchFromScihub
     ? SCIHUB_URL + doi
@@ -115,86 +110,74 @@ async function savePaper(pageContent) {
           throw "bad response: " + response.status
         }
       } catch (error) {
-        chrome.runtime.sendMessage({action: "sendPdf", error: "Failed to fetch pdf: " + error })
+        chrome.runtime.sendMessage({action: "sendPdf", error })
       }
     })();`;
 
-    chrome.runtime.onMessage.addListener(async function listener(
-      request,
-      sender
-    ) {
-      console.log("request: ", request);
-      chrome.runtime.onMessage.removeListener(listener);
-
+    chrome.runtime.onMessage.addListener(async function listener(request) {
       if (request.action === "sendPdf") {
-        if (request.error) throw error;
+        chrome.runtime.onMessage.removeListener(listener);
+        if (request.error) {
+          console.log("Failed to fetch pdf");
+          console.log(error);
+        } else {
+          console.log("saving pdf");
 
-        console.log("saving pdf");
-
-        const data = await fetch(request.objectUrl).then((r) => r.blob());
-        chrome.tabs.remove(tab.id);
-        savePdf(filename, metadata, data);
+          const data = await fetch(request.objectUrl).then((r) => r.blob());
+          chrome.tabs.remove(tab.id);
+          savePdfToIpfs(MfsFilename, metadata, data);
+        }
       }
     });
 
     chrome.tabs.executeScript(tab.id, { code });
   });
-
-  //#endregion save pdf
 }
 
-async function savePdf(filename, metadata, data) {
+async function savePdfToIpfs(MfsFilename, metadata, data) {
   const cid = (await ipfs.add(data)).cid.string;
   console.log("cid: ", cid);
+  //Add pdf to MFS
+  const mfsPdfPath = PDF_FILES_DIR + MfsFilename + ".pdf";
+  await ipfs.files.cp("/ipfs/" + cid, mfsPdfPath, {
+    create: "true",
+    parents: "true",
+  });
 
-  try {
-    //Add pdf to MFS
-    const mfsPdfPath = PDF_FILES_DIR + filename + ".pdf";
-    await ipfs.files.cp("/ipfs/" + cid, mfsPdfPath, {
+  //Update metadata.
+  const newMetadata = {
+    ...metadata,
+    pdf: cid,
+    path_to_pdf: mfsPdfPath,
+  };
+  await ipfs.files.write(
+    PAPERS_DIR + MfsFilename,
+    JSON.stringify(newMetadata),
+    {
       create: "true",
       parents: "true",
-    });
-
-    //Update metadata.
-    const newMetadata = {
-      ...metadata,
-      pdf: cid,
-      path_to_pdf: mfsPdfPath,
-    };
-    await ipfs.files.write(PAPERS_DIR + filename, JSON.stringify(newMetadata), {
-      create: "true",
-      parents: "true",
-    });
-  } catch (error) {
-    console.log(
-      "Failed to copy pdf file to MFS. This may be because the file already exists."
-    );
-    throw error;
-  }
+    }
+  );
 }
 
-async function fetchAndStandardizeUnpaywallData(doi) {
-  const unpaywallBaseUrl = "https://api.unpaywall.org/v2/";
-
-  let data;
+async function fetchMetadata(doi) {
   try {
-    const response = await axios({
-      method: "get",
-      url: unpaywallBaseUrl + doi,
+    const url = new URL(UNPAYWALL_URL + doi);
+    url.searchParams.append("email", "jaredtjacobsen@gmail.com");
+
+    const response = await fetch(url, {
       headers: {
+        "Content-Type": "application/json",
         "X-Requested-With": "XMLHttpRequest",
-      },
-      params: {
-        email: "jaredtjacobsen@gmail.com",
       },
     });
 
-    data = response.data;
+    const metadata = await response.json();
 
-    return transformUnpaywallData(data);
+    return transformUnpaywallMetadata(metadata);
   } catch (error) {
-    console.log("Failed to fetch or process Unpaywall data: ", error);
-    return null;
+    console.log("Failed to fetch Unpaywall metadata");
+    throw error;
   }
 }
 
@@ -214,7 +197,7 @@ async function extractTextFromPdf(pdfUrl) {
 
     return getPageText(1);
   } catch (error) {
-    console.log("Failed to extract PDF text: ", error);
+    console.log("Failed to extract PDF text");
     throw error;
   }
 }
@@ -225,7 +208,7 @@ function extractDoi(content) {
   return match && match[1];
 }
 
-function transformUnpaywallData(data) {
+function transformUnpaywallMetadata(metadata) {
   const metadataKeys = [
     "doi",
     "title",
@@ -240,15 +223,15 @@ function transformUnpaywallData(data) {
     "is_oa",
     "oa_status",
   ];
-  const someMetadata = pick(metadataKeys, data);
+  const someMetadata = pick(metadataKeys, metadata);
 
   const authors = pick(
     ["given", "family", "affiliation", "orcid"],
-    data.z_authors
+    metadata.z_authors
   );
 
   const { url_for_landing_page = null, url_for_pdf = null } =
-    data.best_oa_location || {};
+    metadata.best_oa_location || {};
 
   const allMetadata = {
     ...someMetadata,
@@ -261,7 +244,7 @@ function transformUnpaywallData(data) {
 }
 
 //This function must match that in https://github.com/JaredJacobsen/ipfs-papers-react-native
-function getPaperFilename(title) {
+function getMfsFilenameForPaper(title) {
   const base = title
     .trim()
     .replace(/\s+/g, "-")
