@@ -22,10 +22,13 @@
     "128": "assets/images/paper_icon.png"
   },
   "permissions": [
+    "downloads",
     "contextMenus",
     "tabs",
     "activeTab",
-    "https://www.google.com/"
+    "https://www.google.com/",
+    "http://*/*",
+    "https://*/*"
   ],
   "manifest_version": 2
 }

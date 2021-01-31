@@ -10,14 +10,34 @@ const ipfs = IpfsHttpClient("http://localhost:5001");
 const PAPERS_DIR = "/ipfs-papers/papers/";
 const PDF_FILES_DIR = "/ipfs-papers/pdf_files/";
 const SCIHUB_URL = "https://sci-hub.do/";
-const CORS_PROXY_URL = "http://127.0.0.1:9999/";
 
 //#region scrape paper
 
 async function scrapePaper() {
+  console.log("Scraping paper...");
   try {
-    await ipfs.id(); //Checks if IPFS is alive
-    _scrapePaper();
+    await ipfs.id(); //Check if IPFS is alive. Throws if not
+
+    chrome.tabs.query(
+      { active: true, lastFocusedWindow: true },
+      async (tabs) => {
+        const { url } = tabs[0];
+        let pageContent;
+
+        if (url.slice(-4) === ".pdf") {
+          pageContent = await extractTextFromPdf(url);
+          savePaper(pageContent);
+        } else {
+          chrome.tabs.executeScript(
+            tabs[0].id,
+            {
+              code: "document.documentElement.outerHTML",
+            },
+            (pageContent) => savePaper(pageContent)
+          );
+        }
+      }
+    );
   } catch (error) {
     console.log("Failed to scrape paper: ", error);
     popupDocument.body.append(
@@ -26,36 +46,156 @@ async function scrapePaper() {
   }
 }
 
-window.scrapePaper = scrapePaper;
+window.scrapePaper = scrapePaper; //popup.js can't access the scrapePaper function unless it is on the window
 
-async function _scrapePaper() {
-  console.log("scrapepaper");
-  chrome.tabs.query({ active: true, lastFocusedWindow: true }, async (tabs) => {
-    let url = tabs[0].url;
-    console.log("current url: ", url);
+async function savePaper(pageContent) {
+  //#region get metadata
 
-    let content;
-    if (url.slice(-4) === ".pdf") {
-      content = await extractTextFromPdf(url);
-      savePdf(content);
-    } else {
-      chrome.runtime.onMessage.addListener(async function getHtml(
-        request,
-        sender
-      ) {
-        chrome.runtime.onMessage.removeListener(getHtml);
-        if (request.action == "getHtml") {
-          content = request.html;
-          await savePdf(content);
+  console.log("Fetching metadata...");
+  const doi = extractDoi(pageContent);
+  if (!doi) throw "Cannot find paper DOI number";
+
+  popupDocument.body.append(`\nScraped DOI: ${doi}\n`);
+
+  const metadata = await fetchAndStandardizeUnpaywallData(doi);
+
+  popupDocument.body.append(`\nTitle: ${metadata.title}\n`);
+
+  //#endregion get metadata
+
+  //#region save metadata
+
+  console.log("Saving metadata: ", metadata);
+
+  const filename = getPaperFilename(metadata.title);
+  try {
+    await ipfs.files.write(PAPERS_DIR + filename, JSON.stringify(metadata), {
+      create: "true",
+      parents: "true",
+    });
+  } catch (error) {
+    console.log("Failed to save paper metadata: ", error);
+    throw error;
+  }
+
+  popupDocument.body.append(`\nSaved Paper to IPFS\n`);
+
+  //#endregion save metadata
+
+  //#region save pdf
+
+  console.log("fetching pdf...");
+
+  const fetchFromScihub = !metadata.url_for_pdf; //TODO check if settings allow scihub
+  const createTabUrl = fetchFromScihub
+    ? SCIHUB_URL + doi
+    : metadata.url_for_pdf;
+
+  chrome.tabs.create({ url: createTabUrl, active: false }, (tab) => {
+    const tabUrl = tab.url || tab.pendingUrl; //`tabUrl` could be different than `createTabUrl` if there is a redirect or something
+
+    const code = `(async () => {
+      try {
+        ${
+          fetchFromScihub
+            ? `const res = await fetch("${tabUrl}");
+              const parser = new DOMParser();
+              const url = parser
+              .parseFromString(res.data, "text/html")
+              .querySelector("iframe#pdf")
+              .src.replace("chrome-extension", "https")
+              .replace(/#.*/g, "");
+              const response = await fetch(url)`
+            : `const response = await fetch("${tabUrl}")`
         }
-      });
+        if (response.ok) {
+          const objectUrl = URL.createObjectURL(await response.blob())
+          chrome.runtime.sendMessage({action: "sendPdf", objectUrl})
+        } else {
+          throw "bad response: " + response.status
+        }
+      } catch (error) {
+        chrome.runtime.sendMessage({action: "sendPdf", error: "Failed to fetch pdf: " + error })
+      }
+    })();`;
 
-      chrome.tabs.executeScript(tabs[0].id, {
-        code:
-          'chrome.runtime.sendMessage({action: "getHtml", html: document.documentElement.outerHTML});',
-      });
-    }
+    chrome.runtime.onMessage.addListener(async function listener(
+      request,
+      sender
+    ) {
+      console.log("request: ", request);
+      chrome.runtime.onMessage.removeListener(listener);
+
+      if (request.action === "sendPdf") {
+        if (request.error) throw error;
+
+        console.log("saving pdf");
+
+        const data = await fetch(request.objectUrl).then((r) => r.blob());
+        chrome.tabs.remove(tab.id);
+        savePdf(filename, metadata, data);
+      }
+    });
+
+    chrome.tabs.executeScript(tab.id, { code });
   });
+
+  //#endregion save pdf
+}
+
+async function savePdf(filename, metadata, data) {
+  const cid = (await ipfs.add(data)).cid.string;
+  console.log("cid: ", cid);
+
+  try {
+    //Add pdf to MFS
+    const mfsPdfPath = PDF_FILES_DIR + filename + ".pdf";
+    await ipfs.files.cp("/ipfs/" + cid, mfsPdfPath, {
+      create: "true",
+      parents: "true",
+    });
+
+    //Update metadata.
+    const newMetadata = {
+      ...metadata,
+      pdf: cid,
+      path_to_pdf: mfsPdfPath,
+    };
+    await ipfs.files.write(PAPERS_DIR + filename, JSON.stringify(newMetadata), {
+      create: "true",
+      parents: "true",
+    });
+  } catch (error) {
+    console.log(
+      "Failed to copy pdf file to MFS. This may be because the file already exists."
+    );
+    throw error;
+  }
+}
+
+async function fetchAndStandardizeUnpaywallData(doi) {
+  const unpaywallBaseUrl = "https://api.unpaywall.org/v2/";
+
+  let data;
+  try {
+    const response = await axios({
+      method: "get",
+      url: unpaywallBaseUrl + doi,
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      params: {
+        email: "jaredtjacobsen@gmail.com",
+      },
+    });
+
+    data = response.data;
+
+    return transformUnpaywallData(data);
+  } catch (error) {
+    console.log("Failed to fetch or process Unpaywall data: ", error);
+    return null;
+  }
 }
 
 async function extractTextFromPdf(pdfUrl) {
@@ -79,54 +219,10 @@ async function extractTextFromPdf(pdfUrl) {
   }
 }
 
-async function savePdf(content) {
-  const doi = extractDoi(content);
-  popupDocument.body.append("\ndoi: " + doi + "\n");
-
-  const metadata = await fetchAndTransformUnpaywallData(doi);
-  console.log(
-    "🚀 ~ file: background.js ~ line 85 ~ savePdf ~ metadata",
-    metadata
-  );
-
-  popupDocument.body.append(
-    "\nscraped paper! " + JSON.stringify(metadata) + "\n"
-  );
-
-  const filename = getPaperFilename(metadata.title);
-  addPaperToIpfs(filename, metadata);
-}
-
 function extractDoi(content) {
   const re = /(10\.\d{4,9}\/[-._;():A-Z0-9]+)\s?/gi;
   const match = re.exec(content);
   return match && match[1];
-}
-
-async function fetchAndTransformUnpaywallData(doi) {
-  const unpaywallBaseUrl = "https://api.unpaywall.org/v2/";
-
-  let data;
-  try {
-    const response = await axios({
-      method: "get",
-      url: unpaywallBaseUrl + doi,
-      headers: {
-        "X-Requested-With": "XMLHttpRequest",
-      },
-      params: {
-        email: "jaredtjacobsen@gmail.com",
-      },
-    });
-
-    console.log("fetched data from Unpaywall");
-    data = response.data;
-
-    return transformUnpaywallData(data);
-  } catch (error) {
-    console.log("Failed to fetch or process Unpaywall data: ", error);
-    return null;
-  }
 }
 
 function transformUnpaywallData(data) {
@@ -173,115 +269,6 @@ function getPaperFilename(title) {
     .replace(/[^\w-]/g, "");
 
   return base + "-" + uuidv4();
-}
-
-async function addPaperToIpfs(filename, obj) {
-  try {
-    await ipfs.files.write(PAPERS_DIR + filename, JSON.stringify(obj), {
-      create: "true",
-      parents: "true",
-    });
-  } catch (error) {
-    console.log("Failed to add scraped paper: ", error);
-    throw error;
-  }
-
-  console.log("scraping pdf...");
-  let cid;
-  try {
-    const downloadUrl =
-      obj.url_for_pdf || (await fetchScihubPdfDownloadUrl(obj.doi));
-    console.log(
-      "🚀 ~ file: background.js ~ line 190 ~ addPaperToIpfs ~ downloadUrl",
-      downloadUrl
-    );
-
-    if (downloadUrl) {
-      // chrome.tabs.create({ url: downloadUrl, active: false });
-      const res = await axios({
-        method: "get",
-        url: CORS_PROXY_URL + downloadUrl,
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-        },
-        responseType: "blob",
-      });
-      console.log(
-        "🚀 ~ file: background.js ~ line 198 ~ addPaperToIpfs ~ res",
-        res
-      );
-      const data = res.data;
-      cid = (await ipfs.add(data)).cid.string;
-      console.log(
-        "🚀 ~ file: background.js ~ line 201 ~ addPaperToIpfs ~ cid",
-        cid
-      );
-    }
-  } catch (error) {
-    console.log("failed to fetch pdf: ", error);
-    throw error;
-  }
-
-  console.log("cid", cid);
-
-  if (cid) {
-    try {
-      const mfsPdfPath = PDF_FILES_DIR + filename + ".pdf";
-      await ipfs.files.cp("/ipfs/" + cid, mfsPdfPath, {
-        create: "true",
-        parents: "true",
-      });
-
-      //After the pdf has been saved, the metadata should be updated to link to the saved pdf.
-      const newObj = { ...obj, pdf: cid, path_to_pdf: mfsPdfPath };
-      await ipfs.files.write(PAPERS_DIR + filename, JSON.stringify(newObj), {
-        create: "true",
-        parents: "true",
-      });
-    } catch (error) {
-      console.log(
-        "Failed to copy pdf file to MFS. This may be because the file already exists."
-      );
-      throw error;
-    }
-  } else {
-    console.log("Failed to fetch pdf");
-  }
-}
-
-async function fetchScihubPdfDownloadUrl(doi) {
-  if (!doi) return null;
-
-  try {
-    const res = await axios({
-      method: "get",
-      url: CORS_PROXY_URL + SCIHUB_URL + doi,
-      headers: {
-        "X-Requested-With": "XMLHttpRequest",
-      },
-      responseType: "text/html",
-    });
-    const data = res.data;
-    console.log(
-      "🚀 ~ file: background.js ~ line 238 ~ fetchScihubPdfDownloadUrl ~ data",
-      res
-    );
-
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(data, "text/html");
-    const downloadUrl = doc
-      .querySelector("iframe#pdf")
-      .src.replace("chrome-extension", "https");
-    console.log(
-      "🚀 ~ file: background.js ~ line 246 ~ fetchScihubPdfDownloadUrl ~ downloadUrl",
-      downloadUrl
-    );
-
-    return downloadUrl;
-  } catch (error) {
-    console.log("failed to fetch Scihub pdf download URL: ", error);
-    return null;
-  }
 }
 
 //#endregion scrape paper
