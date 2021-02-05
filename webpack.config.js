@@ -8,7 +8,9 @@ module.exports = {
   // mode: "development",
   entry: {
     popup: "./src/popup.js",
-    background: "./src/background.js",
+    sw: "./src/sw.js",
+    scrapeActiveWindow: "./src/scrapeActiveWindow.js",
+    scrapePdf: "./src/scrapePdf.js",
   },
   output: {
     path: path.resolve(__dirname, "dist"),
