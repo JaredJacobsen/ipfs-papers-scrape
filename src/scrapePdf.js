@@ -1,17 +1,22 @@
-(async () => {
-  console.log("in scrapePdf");
+import { toString } from "lodash/fp";
+import { MESSAGE_TYPES } from "./constants";
 
+(async () => {
   try {
-    console.log("location: ", location.href);
     const response = await fetch(location.href);
 
     if (response.ok) {
-      const pdf = URL.createObjectURL(await response.blob());
-      chrome.runtime.sendMessage({ type: "PDF", pdf });
+      chrome.runtime.sendMessage({
+        type: MESSAGE_TYPES.PDF,
+        pdf: URL.createObjectURL(await response.blob()),
+      });
     } else {
       throw "bad response: " + response.status;
     }
   } catch (error) {
-    chrome.runtime.sendMessage({ type: "ERROR", error });
+    chrome.runtime.sendMessage({
+      type: MESSAGE_TYPES.ERROR,
+      error: toString(error),
+    });
   }
 })();

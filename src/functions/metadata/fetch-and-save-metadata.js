@@ -15,10 +15,10 @@ export default async function fetchAndSaveMetadata(pageText, ipfs) {
 
   console.log("Saving metadata: ", metadata);
   const mfsFilename = getMfsFilenameForPaper(metadata.title);
-  const res = await saveMetadata(mfsFilename, metadata, ipfs);
+  const saved = await saveMetadata(mfsFilename, metadata, ipfs);
 
-  if (res) {
-    displayPopupMessage("Saved metadata to IPFS"); //TODO should only display message is res.status === 'success'
+  if (saved) {
+    displayPopupMessage("Saved metadata to IPFS");
   }
 
   // saveTo === SAVE_OPTIONS.ipfs || saveTo === SAVE_OPTIONS.BOTH

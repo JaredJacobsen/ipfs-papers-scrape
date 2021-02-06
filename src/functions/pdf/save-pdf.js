@@ -2,9 +2,10 @@ import { PAPERS_DIR, PDF_FILES_DIR } from "../../constants";
 import displayPopupMessage from "../utils/display-popup-message";
 import isIpfsReachable from "../utils/is-ipfs-unreachable";
 
+//Returns saved: boolean
 export default async function savePdf(mfsFilename, metadata, data, ipfs) {
   try {
-    const reachable = await isIpfsReachable();
+    const reachable = await isIpfsReachable(ipfs);
     if (!reachable) {
       console.log("IPFS unreachable at http://localhost:5001");
       displayPopupMessage(
@@ -23,14 +24,10 @@ export default async function savePdf(mfsFilename, metadata, data, ipfs) {
 
       //Copy pdf to MFS
       const mfsPdfPath = PDF_FILES_DIR + mfsFilename + ".pdf";
-      const res1 = await ipfs.files.cp("/ipfs/" + cid, mfsPdfPath, {
+      await ipfs.files.cp("/ipfs/" + cid, mfsPdfPath, {
         create: "true",
         parents: "true",
       });
-      if (!res1) {
-        console.log("Failed to copy PDF to MFS");
-        return false;
-      }
 
       //Update metadata.
       const newMetadata = {
@@ -38,7 +35,7 @@ export default async function savePdf(mfsFilename, metadata, data, ipfs) {
         pdf: cid,
         path_to_pdf: mfsPdfPath,
       };
-      const res2 = await ipfs.files.write(
+      await ipfs.files.write(
         PAPERS_DIR + mfsFilename,
         JSON.stringify(newMetadata),
         {
@@ -46,10 +43,7 @@ export default async function savePdf(mfsFilename, metadata, data, ipfs) {
           parents: "true",
         }
       );
-      if (!res2) {
-        console.log("Failed to update metadata with path_to_pdf");
-        return false;
-      }
+
       console.log("Saved PDF to IPFS");
       return true;
     }

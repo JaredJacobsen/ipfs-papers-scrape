@@ -1,5 +1,5 @@
 // import Tesseract from "tesseract.js";
-import { keys } from "lodash/fp";
+import { keys, toString } from "lodash/fp";
 import IpfsHttpClient from "ipfs-http-client";
 import displayPopupMessage from "./functions/utils/display-popup-message";
 import { MESSAGE_TYPES } from "./constants";
@@ -14,13 +14,13 @@ const ipfs = IpfsHttpClient("http://localhost:5001");
 
 //TODO how to clean up listeners?
 //TODO I need some sort of cache in case the user tries to scrape twice.
-chrome.runtime.onMessage.addListener((message) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log("Message Keys: ", keys(message));
-  messageHandlers[message.type](message);
+  messageHandlers[message.type](message, sender, sendResponse);
 });
 
 const messageHandlers = {
-  [MESSAGE_TYPES.START_SCRAPE]: async (message) => {
+  [MESSAGE_TYPES.START_SCRAPE]: async () => {
     const tabs = await chrome.tabs.query({
       active: true,
       lastFocusedWindow: true,
@@ -37,14 +37,6 @@ const messageHandlers = {
       message.html,
       ipfs
     );
-
-    console.log("fn and md: ", mfsFilename, metadata);
-
-    chrome.storage.local.get(["test"], ({ test }) => {
-      console.log("test", test);
-    });
-
-    await chrome.storage.local.set({ mfsFilename, metadata }); //TODO should remove these objects from storage at some point, maybe after everything successfully saves in ipfs
 
     if (metadata.url_for_pdf) {
       console.log("fetching pdf from: ", metadata.url_for_pdf);
@@ -64,10 +56,19 @@ const messageHandlers = {
           100
         );
 
-        chrome.scripting.executeScript({
-          target: { tabId: newTab.id },
-          files: ["scrapePdf.js"],
-        });
+        //TODO should remove these objects from storage at some point, maybe after everything successfully saves in ipfs
+        //Map tab id to metadata so that the scraped pdf can be matched with the metadata later
+        chrome.storage.local.set(
+          {
+            [toString(newTab.id)]: { mfsFilename, metadata },
+          },
+          () => {
+            chrome.scripting.executeScript({
+              target: { tabId: newTab.id },
+              files: ["scrapePdf.js"],
+            });
+          }
+        );
       } catch (error) {
         const m =
           "Error: Unable to save PDF because its download URL is unreachable.";
@@ -79,33 +80,48 @@ const messageHandlers = {
     }
   },
 
-  [MESSAGE_TYPES.PDF]: async (message) => {
-    const pdf = await fetch(message.pdf).then((r) => r.blob());
+  [MESSAGE_TYPES.PDF]: async (message, sender) => {
+    // const pdf = await fetch(message.pdf).then((r) => r.blob());
 
-    //TODO Should I store these in local storage under the url key
+    // const { tabId, pdfKey } = message;
+    // const pdfKey = toString(message.pdfKey);
+
+    const tabId = toString(sender.tab.id);
+    console.log("tabId: ", tabId);
+
     chrome.storage.local.get(
-      ["mfsFilename", "metadata"],
-      async ({ mfsFilename, metadata }) => {
-        if (!mfsFilename || !metadata) {
-          const text = await extractTextFromPdf(pdf);
-          const arr = await fetchAndSaveMetadata(text, ipfs); //TODO fetch and save metadata should happen separately because I will still need metadata even if can't save
-          mfsFilename = arr[0];
-          metadata = arr[1];
-        }
+      [tabId],
+      async ({ [tabId]: { mfsFilename, metadata } }) => {
+        const pdf = await fetch(message.pdf).then((r) => r.blob());
 
-        const res = await savePdf(mfsFilename, metadata, pdf, ipfs);
-
-        if (res) {
-          displayPopupMessage("Saved PDF to IPFS");
-        } else {
+        if (!pdf) {
+          console.log("No PDF returned from content script");
           displayPopupMessage("Failed to save PDF to IPFS");
+        } else {
+          if (!mfsFilename || !metadata) {
+            const text = await extractTextFromPdf(pdf);
+            const arr = await fetchAndSaveMetadata(text, ipfs); //TODO fetch and save metadata should happen separately because I will still need metadata even if can't save
+            mfsFilename = arr[0];
+            metadata = arr[1];
+          }
+
+          const res = await savePdf(mfsFilename, metadata, pdf, ipfs);
+
+          if (res) {
+            displayPopupMessage("Saved PDF to IPFS");
+          } else {
+            displayPopupMessage("Failed to save PDF to IPFS");
+          }
         }
       }
     );
   },
 
-  [MESSAGE_TYPES.ERROR]: async (message) => {
-    console.log("Failed to scrape paper");
+  [MESSAGE_TYPES.TAB_ID]: async (_, sender, sendResponse) =>
+    sendResponse({ tabId: sender.tab.id }),
+
+  [MESSAGE_TYPES.ERROR]: async (message, sender) => {
+    console.log("Failed to scrape paper from tabId " + sender.tab.id);
     console.log(message.error);
   },
 };
@@ -172,7 +188,7 @@ const messageHandlers = {
 //   }
 // };
 
-// const saveTo = (await isIpfsReachable())
+// const saveTo = (await isIpfsReachable(ipfs))
 //   ? SAVE_OPTIONS.IPFS
 //   : SAVE_OPTIONS.DOWNLOADS; //TODO should be false depending on options
 
@@ -203,7 +219,7 @@ const messageHandlers = {
 //           saveTo === SAVE_OPTIONS.IPFS ||
 //           saveTo === SAVE_OPTIONS.BOTH
 //         ) {
-//           savePdf(mfsFilename, metadata, data);
+//           savePdf(mfsFilename, metadata, data, ipfs);
 //         }
 
 //         if (

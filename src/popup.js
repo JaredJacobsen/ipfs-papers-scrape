@@ -1,3 +1,5 @@
+import { MESSAGE_TYPES } from "./constants";
+
 document.body.append("Scraping...");
 
 function log(message) {
@@ -12,4 +14,4 @@ chrome.runtime.onMessage.addListener(async function listener(request) {
   }
 });
 
-chrome.runtime.sendMessage({ type: "START_SCRAPE" });
+chrome.runtime.sendMessage({ type: MESSAGE_TYPES.START_SCRAPE });
