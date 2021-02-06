@@ -2,6 +2,7 @@
   console.log("in scrapePdf");
 
   try {
+    console.log("location: ", location.href);
     const response = await fetch(location.href);
 
     if (response.ok) {

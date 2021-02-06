@@ -6,6 +6,7 @@ import { MESSAGE_TYPES } from "./constants";
 import extractTextFromPdf from "./functions/pdf/extract-text-from-pdf";
 import fetchAndSaveMetadata from "./functions/metadata/fetch-and-save-metadata";
 import savePdf from "./functions/pdf/save-pdf";
+import poll from "./functions/utils/poll";
 
 const ipfs = IpfsHttpClient("http://localhost:5001");
 
@@ -39,7 +40,11 @@ const messageHandlers = {
 
     console.log("fn and md: ", mfsFilename, metadata);
 
-    await chrome.storage.local.set({ mfsFilename, metadata });
+    chrome.storage.local.get(["test"], ({ test }) => {
+      console.log("test", test);
+    });
+
+    await chrome.storage.local.set({ mfsFilename, metadata }); //TODO should remove these objects from storage at some point, maybe after everything successfully saves in ipfs
 
     if (metadata.url_for_pdf) {
       console.log("fetching pdf from: ", metadata.url_for_pdf);
@@ -49,10 +54,28 @@ const messageHandlers = {
         active: false,
       });
 
-      chrome.scripting.executeScript({
-        target: { tabId: newTab.id },
-        files: ["scrapePdf.js"],
-      });
+      try {
+        await poll(
+          async () => {
+            const tab = await chrome.tabs.get(newTab.id);
+            return tab.status === "complete";
+          },
+          8000,
+          100
+        );
+
+        chrome.scripting.executeScript({
+          target: { tabId: newTab.id },
+          files: ["scrapePdf.js"],
+        });
+      } catch (error) {
+        const m =
+          "Error: Unable to save PDF because its download URL is unreachable.";
+        console.log(m);
+        displayPopupMessage(m);
+      }
+    } else {
+      //fetch scihub
     }
   },
 
@@ -60,21 +83,25 @@ const messageHandlers = {
     const pdf = await fetch(message.pdf).then((r) => r.blob());
 
     //TODO Should I store these in local storage under the url key
-    let { mfsFilename, metadata } = await chrome.storage.local.get([
-      "mfsFilename",
-      "metadata",
-    ]);
+    chrome.storage.local.get(
+      ["mfsFilename", "metadata"],
+      async ({ mfsFilename, metadata }) => {
+        if (!mfsFilename || !metadata) {
+          const text = await extractTextFromPdf(pdf);
+          const arr = await fetchAndSaveMetadata(text, ipfs); //TODO fetch and save metadata should happen separately because I will still need metadata even if can't save
+          mfsFilename = arr[0];
+          metadata = arr[1];
+        }
 
-    if (!mfsFilename || !metadata) {
-      const text = await extractTextFromPdf(pdf);
-      const arr = await fetchAndSaveMetadata(text, ipfs);
-      mfsFilename = arr[0];
-      metadata = arr[1];
-    }
+        const res = await savePdf(mfsFilename, metadata, pdf, ipfs);
 
-    savePdf(mfsFilename, metadata, pdf, ipfs);
-
-    displayPopupMessage("Saved PDF to IPFS");
+        if (res) {
+          displayPopupMessage("Saved PDF to IPFS");
+        } else {
+          displayPopupMessage("Failed to save PDF to IPFS");
+        }
+      }
+    );
   },
 
   [MESSAGE_TYPES.ERROR]: async (message) => {
@@ -158,11 +185,6 @@ const messageHandlers = {
 // ) {
 //   downloadPdf(mfsFilename, data);
 // }
-
-// console.log("IPFS unreachable at http://localhost:5001");
-// displayPopupMessage(
-//   `Unable to reach IPFS. Make sure that IPFS is running at http://localhost:5001`
-// );
 
 // async function listenForFetchedPdf(metadata, mfsFilename, saveTo) {
 //   chrome.runtime.onMessage.addListener(async function listener(message) {

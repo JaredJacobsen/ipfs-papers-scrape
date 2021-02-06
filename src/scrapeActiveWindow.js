@@ -3,6 +3,8 @@ import isPdf from "./functions/utils/is-pdf";
 (async () => {
   console.log("in scrape active");
 
+  await chrome.storage.local.set({ test: "testing storage" });
+
   try {
     const response = await fetch(location.href);
     if (response.ok) {

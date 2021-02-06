@@ -1,6 +1,7 @@
 import displayPopupMessage from "../utils/display-popup-message";
 import extractDoi from "./extract-doi";
 import fetchMetadata from "./fetch-metadata";
+import getMfsFilenameForPaper from "./get-mfs-filename-for-paper";
 import saveMetadata from "./save-metadata";
 
 export default async function fetchAndSaveMetadata(pageText, ipfs) {
@@ -13,12 +14,16 @@ export default async function fetchAndSaveMetadata(pageText, ipfs) {
   displayPopupMessage(`Title: ${metadata.title}\nDOI: ${doi}`);
 
   console.log("Saving metadata: ", metadata);
-  const mfsFilename = await saveMetadata(metadata, ipfs);
+  const mfsFilename = getMfsFilenameForPaper(metadata.title);
+  const res = await saveMetadata(mfsFilename, metadata, ipfs);
+
+  if (res) {
+    displayPopupMessage("Saved metadata to IPFS"); //TODO should only display message is res.status === 'success'
+  }
+
   // saveTo === SAVE_OPTIONS.ipfs || saveTo === SAVE_OPTIONS.BOTH
   //   ? await saveMetadata(metadata)
-  //   : null;
-
-  displayPopupMessage("Saved metadata to IPFS");
+  //   : null
 
   return [mfsFilename, metadata];
 }
