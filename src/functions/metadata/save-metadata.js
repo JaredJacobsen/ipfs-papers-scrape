@@ -1,4 +1,4 @@
-import { appDataDirectory } from "../../config";
+import { appDataDirectory } from "../../../config";
 import displayPopupMessage from "../utils/display-popup-message";
 import isIpfsReachable from "../utils/is-ipfs-unreachable";
 

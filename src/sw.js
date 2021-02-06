@@ -8,7 +8,7 @@ import fetchAndSaveMetadata from "./functions/metadata/fetch-and-save-metadata";
 import savePdf from "./functions/pdf/save-pdf";
 import poll from "./functions/utils/poll";
 import isIpfsReachable from "./functions/utils/is-ipfs-unreachable";
-import { ipfsUrl } from "./config";
+import { ipfsUrl } from "../config";
 
 const ipfs = IpfsHttpClient(ipfsUrl);
 

@@ -1,4 +1,4 @@
-import { unpaywallApiUrl } from "../../config";
+import { unpaywallApiUrl } from "../../../config";
 import transformUnpaywallMetadata from "./transform-unpaywall-metadata";
 
 export default async function fetchMetadata(doi) {
