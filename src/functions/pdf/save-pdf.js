@@ -1,4 +1,4 @@
-import { PAPERS_DIR, PDF_FILES_DIR } from "../../constants";
+import { appDataDirectory } from "../../config";
 import displayPopupMessage from "../utils/display-popup-message";
 import isIpfsReachable from "../utils/is-ipfs-unreachable";
 
@@ -23,7 +23,7 @@ export default async function savePdf(mfsFilename, metadata, data, ipfs) {
       }
 
       //Copy pdf to MFS
-      const mfsPdfPath = PDF_FILES_DIR + mfsFilename + ".pdf";
+      const mfsPdfPath = appDataDirectory + "pdf_files/" + mfsFilename + ".pdf";
       await ipfs.files.cp("/ipfs/" + cid, mfsPdfPath, {
         create: "true",
         parents: "true",
@@ -36,7 +36,7 @@ export default async function savePdf(mfsFilename, metadata, data, ipfs) {
         path_to_pdf: mfsPdfPath,
       };
       await ipfs.files.write(
-        PAPERS_DIR + mfsFilename,
+        appDataDirectory + "papers/" + mfsFilename,
         JSON.stringify(newMetadata),
         {
           create: "true",

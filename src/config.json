@@ -1,0 +1,6 @@
+{
+  "appDataDirectory": "/ipfs_papers/",
+  "scihubUrl": "https://sci-hub.do/",
+  "unpaywallApiUrl": "https://api.unpaywall.org/v2/",
+  "ipfsUrl": "/ip4/127.0.0.1/tcp/5001"
+}

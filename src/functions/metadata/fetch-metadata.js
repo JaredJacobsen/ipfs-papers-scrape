@@ -1,9 +1,9 @@
-import { UNPAYWALL_URL } from "../../constants";
+import { unpaywallApiUrl } from "../../config";
 import transformUnpaywallMetadata from "./transform-unpaywall-metadata";
 
 export default async function fetchMetadata(doi) {
   try {
-    const url = new URL(UNPAYWALL_URL + doi);
+    const url = new URL(unpaywallApiUrl + doi);
     url.searchParams.append("email", "jaredtjacobsen@gmail.com");
 
     const response = await fetch(url, {

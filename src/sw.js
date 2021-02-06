@@ -7,8 +7,10 @@ import extractTextFromPdf from "./functions/pdf/extract-text-from-pdf";
 import fetchAndSaveMetadata from "./functions/metadata/fetch-and-save-metadata";
 import savePdf from "./functions/pdf/save-pdf";
 import poll from "./functions/utils/poll";
+import isIpfsReachable from "./functions/utils/is-ipfs-unreachable";
+import { ipfsUrl } from "./config";
 
-const ipfs = IpfsHttpClient("http://localhost:5001");
+const ipfs = IpfsHttpClient(ipfsUrl);
 
 //#region scrape paper
 
@@ -21,15 +23,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 const messageHandlers = {
   [MESSAGE_TYPES.START_SCRAPE]: async () => {
-    const tabs = await chrome.tabs.query({
-      active: true,
-      lastFocusedWindow: true,
-    });
+    const r = await isIpfsReachable(ipfs);
+    displayPopupMessage(r);
+    // const tabs = await chrome.tabs.query({
+    //   active: true,
+    //   lastFocusedWindow: true,
+    // });
 
-    chrome.scripting.executeScript({
-      target: { tabId: tabs[0].id },
-      files: ["scrapeActiveWindow.js"],
-    });
+    // chrome.scripting.executeScript({
+    //   target: { tabId: tabs[0].id },
+    //   files: ["scrapeActiveWindow.js"],
+    // });
   },
 
   [MESSAGE_TYPES.HTML]: async (message) => {
@@ -129,7 +133,7 @@ const messageHandlers = {
 // async function fetchPdf(metadata) {
 //   const fetchFromScihub = !metadata.url_for_pdf; //TODO check if settings allow scihub
 //   const createTabUrl = fetchFromScihub
-//     ? SCIHUB_URL + doi
+//     ? scihubUrl + doi
 //     : metadata.url_for_pdf;
 
 //   chrome.tabs.create({ url: createTabUrl, active: false }, async (tab) => {

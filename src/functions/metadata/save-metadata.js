@@ -1,4 +1,4 @@
-import { PAPERS_DIR } from "../../constants";
+import { appDataDirectory } from "../../config";
 import displayPopupMessage from "../utils/display-popup-message";
 import isIpfsReachable from "../utils/is-ipfs-unreachable";
 
@@ -13,7 +13,7 @@ export default async function saveMetadata(mfsFilename, metadata, ipfs) {
       );
     } else {
       await ipfs.files.write(
-        PAPERS_DIR + mfsFilename,
+        appDataDirectory + "papers/" + mfsFilename,
         JSON.stringify(metadata),
         {
           create: "true",
