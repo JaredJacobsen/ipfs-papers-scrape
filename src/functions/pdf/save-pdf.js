@@ -1,4 +1,4 @@
-import { appDataDirectory } from "../../../config";
+import { appDataDirectory, ipfsUrl } from "../../../config";
 import displayPopupMessage from "../utils/display-popup-message";
 import isIpfsReachable from "../utils/is-ipfs-unreachable";
 
@@ -7,9 +7,10 @@ export default async function savePdf(mfsFilename, metadata, data, ipfs) {
   try {
     const reachable = await isIpfsReachable(ipfs);
     if (!reachable) {
-      console.log("IPFS unreachable at http://localhost:5001");
+      console.log("IPFS unreachable at " + ipfsUrl);
       displayPopupMessage(
-        `Sorry, pdf was not saved because IPFS is unreachable. Make sure that IPFS is running at http://localhost:5001`
+        "Sorry, pdf was not saved because IPFS is unreachable. Make sure that IPFS is running at " +
+          ipfsUrl
       );
     } else {
       //TODO all three actions below need to be a single transaction
@@ -25,7 +26,6 @@ export default async function savePdf(mfsFilename, metadata, data, ipfs) {
       //Copy pdf to MFS
       const mfsPdfPath = appDataDirectory + "pdf_files/" + mfsFilename + ".pdf";
       await ipfs.files.cp("/ipfs/" + cid, mfsPdfPath, {
-        create: "true",
         parents: "true",
       });
 

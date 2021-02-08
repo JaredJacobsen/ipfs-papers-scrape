@@ -1,4 +1,4 @@
-import { appDataDirectory } from "../../../config";
+import { appDataDirectory, ipfsUrl } from "../../../config";
 import displayPopupMessage from "../utils/display-popup-message";
 import isIpfsReachable from "../utils/is-ipfs-unreachable";
 
@@ -7,9 +7,10 @@ export default async function saveMetadata(mfsFilename, metadata, ipfs) {
   try {
     const reachable = await isIpfsReachable(ipfs);
     if (!reachable) {
-      console.log("IPFS unreachable at http://localhost:5001");
+      console.log("IPFS unreachable at " + ipfsUrl);
       displayPopupMessage(
-        `Sorry, metadata was not saved because IPFS is unreachable. Make sure that IPFS is running at http://localhost:5001`
+        "Sorry, metadata was not saved because IPFS is unreachable. Make sure that IPFS is running at " +
+          ipfsUrl
       );
     } else {
       await ipfs.files.write(
