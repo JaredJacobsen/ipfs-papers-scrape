@@ -1,9 +1,13 @@
 import { appDataDirectory, ipfsUrl } from "../../../config";
 import displayPopupMessage from "../utils/display-popup-message";
 import isIpfsReachable from "../utils/is-ipfs-unreachable";
+import titleToFilename from "./title-to-filename";
 
 //TODO should return boolean?
-export default async function saveMetadata(mfsFilename, metadata, ipfs) {
+//TODO what if metadata for the paper already exists?
+export default async function saveMetadata(ipfs, metadata) {
+  console.log("Saving metadata: ", metadata);
+
   try {
     const reachable = await isIpfsReachable(ipfs);
     if (!reachable) {
@@ -14,13 +18,16 @@ export default async function saveMetadata(mfsFilename, metadata, ipfs) {
       );
     } else {
       await ipfs.files.write(
-        appDataDirectory + "papers/" + mfsFilename,
+        appDataDirectory + "papers/" + titleToFilename(metadata.title),
         JSON.stringify(metadata),
         {
-          create: "true",
-          parents: "true",
+          create: true,
+          parents: true,
         }
       );
+
+      displayPopupMessage("Saved metadata to IPFS");
+
       return true;
     }
   } catch (error) {

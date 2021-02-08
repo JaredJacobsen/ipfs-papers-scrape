@@ -8,15 +8,18 @@ import isPdf from "./functions/utils/is-pdf";
     if (response.ok) {
       const responseClone = response.clone();
       const isUrlAPdf = isPdf(await responseClone.arrayBuffer());
-      if (isUrlAPdf) {
-        const pdf = URL.createObjectURL(await response.blob()); //TODO use storage
-        chrome.runtime.sendMessage({ type: MESSAGE_TYPES.PDF, pdf });
-      } else {
-        chrome.runtime.sendMessage({
-          type: MESSAGE_TYPES.HTML,
-          html: document.documentElement.outerHTML,
-        });
-      }
+
+      chrome.runtime.sendMessage(
+        isUrlAPdf
+          ? {
+              type: MESSAGE_TYPES.PDF_WITH_UNKNOWN_METADATA,
+              pdf: URL.createObjectURL(await response.blob()),
+            }
+          : {
+              type: MESSAGE_TYPES.HTML,
+              html: document.documentElement.outerHTML,
+            }
+      );
     } else {
       throw "bad response status: " + response.status;
     }

@@ -4,10 +4,12 @@ import IpfsHttpClient from "ipfs-http-client";
 import displayPopupMessage from "./functions/utils/display-popup-message";
 import { MESSAGE_TYPES } from "./constants";
 import extractTextFromPdf from "./functions/pdf/extract-text-from-pdf";
-import fetchAndSaveMetadata from "./functions/metadata/fetch-and-save-metadata";
 import savePdf from "./functions/pdf/save-pdf";
-import poll from "./functions/utils/poll";
 import { ipfsUrl } from "../config";
+import fetchPdf from "./functions/pdf/fetch-pdf";
+import pdfObjectUrlToBlob from "./functions/pdf/pdf-object-url-to-blob";
+import textToMetadata from "./functions/metadata/textToMetadata";
+import saveMetadata from "./functions/metadata/save-metadata";
 
 const ipfs = IpfsHttpClient(ipfsUrl);
 
@@ -34,87 +36,46 @@ const messageHandlers = {
   },
 
   [MESSAGE_TYPES.HTML]: async (message) => {
-    const [mfsFilename, metadata] = await fetchAndSaveMetadata(
-      message.html,
-      ipfs
-    );
+    const metadata = await textToMetadata(message.html);
+    await saveMetadata(ipfs, metadata);
 
-    if (metadata.url_for_pdf) {
-      console.log("fetching pdf from: ", metadata.url_for_pdf);
-
-      const newTab = await chrome.tabs.create({
-        url: metadata.url_for_pdf,
-        active: false,
-      });
-
-      try {
-        await poll(
-          async () => {
-            const tab = await chrome.tabs.get(newTab.id);
-            return tab.status === "complete";
-          },
-          8000,
-          100
-        );
-
-        //TODO should remove these objects from storage at some point, maybe after everything successfully saves in ipfs
-        //Map tab id to metadata so that the scraped pdf can be matched with the metadata later
-        chrome.storage.local.set(
-          {
-            [toString(newTab.id)]: { mfsFilename, metadata },
-          },
-          () => {
-            chrome.scripting.executeScript({
-              target: { tabId: newTab.id },
-              files: ["scrapePdf.js"],
-            });
-          }
-        );
-      } catch (error) {
-        const m =
-          "Error: Unable to save PDF because its download URL is unreachable.";
-        console.log(m);
-        displayPopupMessage(m);
-      }
+    const { url_for_pdf, title } = metadata;
+    console.log("metadata", metadata);
+    if (url_for_pdf) {
+      fetchPdf(url_for_pdf, title);
     } else {
       //fetch scihub
     }
   },
 
-  [MESSAGE_TYPES.PDF]: async (message, sender) => {
-    // const pdf = await fetch(message.pdf).then((r) => r.blob());
-
-    // const { tabId, pdfKey } = message;
-    // const pdfKey = toString(message.pdfKey);
+  [MESSAGE_TYPES.PDF_WITH_KNOWN_METADATA]: async (message, sender) => {
+    const pdf = await pdfObjectUrlToBlob(message.pdf);
+    chrome.tabs.remove(sender.tab.id);
 
     const tabId = toString(sender.tab.id);
-    console.log("tabId: ", tabId);
+    chrome.storage.local.get([tabId], async ({ [tabId]: title }) => {
+      const res = await savePdf(ipfs, title, pdf);
+      displayPopupMessage(
+        res ? "Saved PDF to IPFS" : "Failed to save PDF to IPFS"
+      );
+    });
+  },
 
-    chrome.storage.local.get(
-      [tabId],
-      async ({ [tabId]: { mfsFilename, metadata } }) => {
-        const pdf = await fetch(message.pdf).then((r) => r.blob());
+  [MESSAGE_TYPES.PDF_WITH_UNKNOWN_METADATA]: async (message) => {
+    const pdf = await pdfObjectUrlToBlob(message.pdf);
 
-        if (!pdf) {
-          console.log("No PDF returned from content script");
-          displayPopupMessage("Failed to save PDF to IPFS");
-        } else {
-          if (!mfsFilename || !metadata) {
-            const text = await extractTextFromPdf(pdf);
-            const arr = await fetchAndSaveMetadata(text, ipfs); //TODO fetch and save metadata should happen separately because I will still need metadata even if can't save
-            mfsFilename = arr[0];
-            metadata = arr[1];
-          }
+    const text = await extractTextFromPdf(pdf);
+    const metadata = await textToMetadata(ipfs, text);
+    const savedMetadata = await saveMetadata(ipfs, metadata);
+    displayPopupMessage(
+      savedMetadata
+        ? "Saved Metadata to IPFS"
+        : "Failed to save Metadata to IPFS"
+    );
 
-          const res = await savePdf(mfsFilename, metadata, pdf, ipfs);
-
-          if (res) {
-            displayPopupMessage("Saved PDF to IPFS");
-          } else {
-            displayPopupMessage("Failed to save PDF to IPFS");
-          }
-        }
-      }
+    const savedPdf = await savePdf(ipfs, metadata.title, pdf);
+    displayPopupMessage(
+      savedPdf ? "Saved PDF to IPFS" : "Failed to save PDF to IPFS"
     );
   },
 

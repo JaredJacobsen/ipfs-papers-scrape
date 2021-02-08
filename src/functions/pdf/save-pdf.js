@@ -1,9 +1,10 @@
 import { appDataDirectory, ipfsUrl } from "../../../config";
+import titleToFilename from "../metadata/title-to-filename";
 import displayPopupMessage from "../utils/display-popup-message";
 import isIpfsReachable from "../utils/is-ipfs-unreachable";
 
 //Returns saved: boolean
-export default async function savePdf(mfsFilename, metadata, data, ipfs) {
+export default async function savePdf(ipfs, title, pdf) {
   try {
     const reachable = await isIpfsReachable(ipfs);
     if (!reachable) {
@@ -16,35 +17,16 @@ export default async function savePdf(mfsFilename, metadata, data, ipfs) {
       //TODO all three actions below need to be a single transaction
 
       //Add pdf to IPFS
-      const cid = (await ipfs.add(data)).cid.string;
-      console.log("cid: ", cid);
-      if (!cid) {
-        console.log("Failed to add PDF to IPFS");
-        return false;
-      }
+      const cid = (await ipfs.add(pdf)).cid.string;
 
-      //Copy pdf to MFS
-      const mfsPdfPath = appDataDirectory + "pdf_files/" + mfsFilename + ".pdf";
-      await ipfs.files.cp("/ipfs/" + cid, mfsPdfPath, {
-        parents: "true",
-      });
+      //Copy pdf to MFS, but first create pdf dir if it doesn't exist. {parents: true} doesn't work with cp so the parent dir must be created first
+      const pdfDir = appDataDirectory + "pdf_files/";
+      ipfs.files.mkdir(pdfDir, { parents: true });
+      const mfsPdfPath = pdfDir + titleToFilename(title) + ".pdf";
+      await ipfs.files.cp("/ipfs/" + cid, mfsPdfPath);
 
-      //Update metadata.
-      const newMetadata = {
-        ...metadata,
-        pdf: cid,
-        path_to_pdf: mfsPdfPath,
-      };
-      await ipfs.files.write(
-        appDataDirectory + "papers/" + mfsFilename,
-        JSON.stringify(newMetadata),
-        {
-          create: "true",
-          parents: "true",
-        }
-      );
+      console.log("Saved PDF to IPFS: ", cid);
 
-      console.log("Saved PDF to IPFS");
       return true;
     }
   } catch (error) {
