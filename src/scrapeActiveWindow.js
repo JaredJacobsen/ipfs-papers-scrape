@@ -12,7 +12,7 @@ import isPdf from "./functions/utils/is-pdf";
       chrome.runtime.sendMessage(
         isUrlAPdf
           ? {
-              type: MESSAGE_TYPES.PDF_WITH_UNKNOWN_METADATA,
+              type: MESSAGE_TYPES.ACTIVE_TAB_PDF,
               pdf: URL.createObjectURL(await response.blob()),
             }
           : {

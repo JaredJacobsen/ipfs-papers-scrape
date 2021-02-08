@@ -48,7 +48,7 @@ const messageHandlers = {
     }
   },
 
-  [MESSAGE_TYPES.PDF_WITH_KNOWN_METADATA]: async (message, sender) => {
+  [MESSAGE_TYPES.NEW_TAB_PDF]: async (message, sender) => {
     const pdf = await pdfObjectUrlToBlob(message.pdf);
     chrome.tabs.remove(sender.tab.id);
 
@@ -61,7 +61,7 @@ const messageHandlers = {
     });
   },
 
-  [MESSAGE_TYPES.PDF_WITH_UNKNOWN_METADATA]: async (message) => {
+  [MESSAGE_TYPES.ACTIVE_TAB_PDF]: async (message) => {
     const pdf = await pdfObjectUrlToBlob(message.pdf);
 
     const text = await extractTextFromPdf(pdf);
