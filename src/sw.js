@@ -118,9 +118,6 @@ const messageHandlers = {
     );
   },
 
-  [MESSAGE_TYPES.TAB_ID]: async (_, sender, sendResponse) =>
-    sendResponse({ tabId: sender.tab.id }),
-
   [MESSAGE_TYPES.ERROR]: async (message, sender) => {
     console.log("Failed to scrape paper from tabId " + sender.tab.id);
     console.log(message.error);

@@ -3,7 +3,6 @@ const MESSAGE_TYPES = {
   START_SCRAPE: "START_SCRAPE",
   HTML: "HTML",
   PDF: "PDF",
-  TAB_ID: "TAB_ID",
   ERROR: "ERROR",
 };
 

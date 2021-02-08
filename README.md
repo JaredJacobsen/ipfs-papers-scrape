@@ -17,3 +17,5 @@ client app url
 The configuration directory for the Brave managed go-ipfs node can be found in the browser’s profile directory in a subfolder named brave_ipfs. You can find your profile directory listed here: brave://version/. After the Brave ipfs config file has been changed, run `pkill ipfs` then go to brave://ipfs and hit 'stop' then 'start'. The IPFS companion will not be able to connect unless access control is explicitly granted to it as indicated above.
 
 The IPFS companion extension is needed in order to view PDFs
+
+The manifest.json can be found in dist
