@@ -14,4 +14,4 @@ chrome.runtime.onMessage.addListener(async function listener(request) {
   }
 });
 
-chrome.runtime.sendMessage({ type: MESSAGE_TYPES.START_SCRAPE });
+chrome.runtime.sendMessage({ type: MESSAGE_TYPES.SCRAPE_ACTIVE_TAB });

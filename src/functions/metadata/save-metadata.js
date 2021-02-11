@@ -1,5 +1,5 @@
 import { appDataDirectory, ipfsUrl } from "../../../config";
-import displayPopupMessage from "../utils/display-popup-message";
+import displayPopupMessage from "../display-popup-message";
 import isIpfsReachable from "../utils/is-ipfs-unreachable";
 import titleToFilename from "./title-to-filename";
 

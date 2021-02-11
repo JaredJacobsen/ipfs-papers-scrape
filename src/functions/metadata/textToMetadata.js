@@ -1,4 +1,4 @@
-import displayPopupMessage from "../utils/display-popup-message";
+import displayPopupMessage from "../display-popup-message";
 import extractDoi from "./extract-doi";
 import fetchMetadata from "./fetch-metadata";
 

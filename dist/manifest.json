@@ -14,6 +14,12 @@
       "128": "assets/images/paper_icon.png"
     }
   },
+  "content_scripts": [
+    {
+      "matches": ["https://scholar.google.com/*"],
+      "js": ["googleScholarContentScript.js"]
+    }
+  ],
   "icons": {
     "16": "assets/images/paper_icon.png",
     "32": "assets/images/paper_icon.png",
@@ -28,7 +34,8 @@
     "scripting",
     "storage",
     "http://*/*",
-    "https://*/*"
+    "https://*/*",
+    "*://*/*"
   ],
   "host_permissions": ["*://*/*", "http://*/*", "https://*/*"],
   "manifest_version": 3

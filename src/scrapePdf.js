@@ -7,7 +7,7 @@ import { MESSAGE_TYPES } from "./constants";
 
     if (response.ok) {
       chrome.runtime.sendMessage({
-        type: MESSAGE_TYPES.NEW_TAB_PDF,
+        type: MESSAGE_TYPES.PDF_WITH_SAVED_METADATA,
         pdf: URL.createObjectURL(await response.blob()),
       });
     } else {

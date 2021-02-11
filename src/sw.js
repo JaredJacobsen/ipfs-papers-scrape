@@ -1,29 +1,38 @@
 // import Tesseract from "tesseract.js";
-import { keys, toString } from "lodash/fp";
+import { keys } from "lodash/fp";
 import IpfsHttpClient from "ipfs-http-client";
-import displayPopupMessage from "./functions/utils/display-popup-message";
+import displayPopupMessage from "./functions/display-popup-message";
 import { MESSAGE_TYPES } from "./constants";
 import extractTextFromPdf from "./functions/pdf/extract-text-from-pdf";
 import savePdf from "./functions/pdf/save-pdf";
 import { ipfsUrl } from "../config";
-import fetchPdf from "./functions/pdf/fetch-pdf";
 import pdfObjectUrlToBlob from "./functions/pdf/pdf-object-url-to-blob";
 import textToMetadata from "./functions/metadata/textToMetadata";
 import saveMetadata from "./functions/metadata/save-metadata";
+import executeScriptInNewTab from "./functions/execute-script-in-new-tab";
+import storage from "./storage";
 
 const ipfs = IpfsHttpClient(ipfsUrl);
 
 //#region scrape paper
 
-//TODO how to clean up listeners?
+//TODO how to clean up listeners? Will there only ever be one SW regardless of how many times the extension is activated?
 //TODO I need some sort of cache in case the user tries to scrape twice.
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log("Message Keys: ", keys(message));
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+  const tabId = sender.tab && sender.tab.id;
+  console.log("tabId: ", tabId);
+  const tabInfo = await storage.get(tabId);
+  console.log("tabInfo: ", tabInfo, tabId);
+  if (tabInfo && tabInfo.closeTabOnResponse) {
+    chrome.tabs.remove(tabId);
+  }
+
+  console.log("Message: ", message);
   messageHandlers[message.type](message, sender, sendResponse);
 });
 
 const messageHandlers = {
-  [MESSAGE_TYPES.START_SCRAPE]: async () => {
+  [MESSAGE_TYPES.SCRAPE_ACTIVE_TAB]: async () => {
     const tabs = await chrome.tabs.query({
       active: true,
       lastFocusedWindow: true,
@@ -31,37 +40,57 @@ const messageHandlers = {
 
     chrome.scripting.executeScript({
       target: { tabId: tabs[0].id },
-      files: ["scrapeActiveWindow.js"],
+      files: ["scrapeHtmlOrPdf.js"],
+    });
+  },
+
+  [MESSAGE_TYPES.SCRAPE_NEW_TAB]: async (message) => {
+    executeScriptInNewTab({
+      url: message.url,
+      script: "scrapeHtmlOrPdf.js",
+      tabInfo: { closeTabOnResponse: true },
+      onError: (error) => {
+        console.log(error);
+        displayPopupMessage("Failed to Scrape Paper");
+      },
     });
   },
 
   [MESSAGE_TYPES.HTML]: async (message) => {
     const metadata = await textToMetadata(message.html);
     await saveMetadata(ipfs, metadata);
+    console.log("metadata", metadata);
 
     const { url_for_pdf, title } = metadata;
-    console.log("metadata", metadata);
     if (url_for_pdf) {
-      fetchPdf(url_for_pdf, title);
+      console.log("fetching pdf from: ", title);
+
+      executeScriptInNewTab({
+        url: url_for_pdf,
+        script: "scrapePdf.js",
+        tabInfo: { title, closeTabOnResponse: true },
+        onError: (error) => {
+          console.log(error);
+          displayPopupMessage("Failed to Scrape Paper");
+        },
+      });
     } else {
       //fetch scihub
     }
   },
 
-  [MESSAGE_TYPES.NEW_TAB_PDF]: async (message, sender) => {
+  [MESSAGE_TYPES.PDF_WITH_SAVED_METADATA]: async (message, sender) => {
     const pdf = await pdfObjectUrlToBlob(message.pdf);
-    chrome.tabs.remove(sender.tab.id);
 
-    const tabId = toString(sender.tab.id);
-    chrome.storage.local.get([tabId], async ({ [tabId]: title }) => {
-      const res = await savePdf(ipfs, title, pdf);
-      displayPopupMessage(
-        res ? "Saved PDF to IPFS" : "Failed to save PDF to IPFS"
-      );
-    });
+    const { title } = await storage.get(sender.tab.id);
+
+    const res = await savePdf(ipfs, title, pdf);
+    displayPopupMessage(
+      res ? "Saved PDF to IPFS" : "Failed to save PDF to IPFS"
+    );
   },
 
-  [MESSAGE_TYPES.ACTIVE_TAB_PDF]: async (message) => {
+  [MESSAGE_TYPES.PDF_WITHOUT_SAVED_METADATA]: async (message) => {
     const pdf = await pdfObjectUrlToBlob(message.pdf);
 
     const text = await extractTextFromPdf(pdf);

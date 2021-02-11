@@ -5,12 +5,18 @@ const webpack = require("webpack");
 module.exports = {
   // entry: ["babel-polyfill", "./test.js"],
   // devtool: "cheap-module-source-map",
+  devtool: "inline-source-map",
   // mode: "development",
+  optimization: {
+    minimize: false, // <---- disables uglify.
+    // minimizer: [new UglifyJsPlugin()] if you want to customize it.
+  },
   entry: {
     popup: "./src/popup.js",
     sw: "./src/sw.js",
-    scrapeActiveWindow: "./src/scrapeActiveWindow.js",
+    scrapeHtmlOrPdf: "./src/scrapeHtmlOrPdf.js",
     scrapePdf: "./src/scrapePdf.js",
+    googleScholarContentScript: "./src/googleScholarContentScript.js",
   },
   output: {
     path: path.resolve(__dirname, "dist"),
