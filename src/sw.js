@@ -1,5 +1,5 @@
 // import Tesseract from "tesseract.js";
-import { keys } from "lodash/fp";
+import { contains } from "lodash/fp";
 import IpfsHttpClient from "ipfs-http-client";
 import displayPopupMessage from "./functions/display-popup-message";
 import { MESSAGE_TYPES } from "./constants";
@@ -21,9 +21,17 @@ const ipfs = IpfsHttpClient(ipfsUrl);
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   const tabId = sender.tab && sender.tab.id;
   console.log("tabId: ", tabId);
-  const tabInfo = await storage.get(tabId);
-  console.log("tabInfo: ", tabInfo, tabId);
-  if (tabInfo && tabInfo.closeTabOnResponse) {
+  const options = await storage.get(tabId);
+  console.log("options: ", options, tabId);
+  if (
+    options &&
+    options.closeTabOnResponse &&
+    contains(message.type, [
+      MESSAGE_TYPES.SCRAPE_NEW_TAB,
+      MESSAGE_TYPES.HTML,
+      MESSAGE_TYPES.ERROR,
+    ])
+  ) {
     chrome.tabs.remove(tabId);
   }
 
@@ -46,9 +54,12 @@ const messageHandlers = {
 
   [MESSAGE_TYPES.SCRAPE_NEW_TAB]: async (message) => {
     executeScriptInNewTab({
-      url: message.url,
+      options: {
+        url: message.url,
+        closeTabOnResponse: true,
+        indirectFetch: true,
+      },
       script: "scrapeHtmlOrPdf.js",
-      tabInfo: { closeTabOnResponse: true },
       onError: (error) => {
         console.log(error);
         displayPopupMessage("Failed to Scrape Paper");
@@ -66,9 +77,13 @@ const messageHandlers = {
       console.log("fetching pdf from: ", title);
 
       executeScriptInNewTab({
-        url: url_for_pdf,
+        options: {
+          url: url_for_pdf,
+          title,
+          closeTabOnResponse: true,
+          indirectFetch: true,
+        },
         script: "scrapePdf.js",
-        tabInfo: { title, closeTabOnResponse: true },
         onError: (error) => {
           console.log(error);
           displayPopupMessage("Failed to Scrape Paper");
@@ -108,8 +123,18 @@ const messageHandlers = {
     );
   },
 
+  [MESSAGE_TYPES.OPTIONS]: async (_, sender, sendResponse) => {
+    const options = await storage.get(sender.tab.id);
+    console.log("options: ", options);
+    sendResponse(options);
+  },
+
   [MESSAGE_TYPES.ERROR]: async (message, sender) => {
-    console.log("Failed to scrape paper from tabId " + sender.tab.id);
+    console.log(
+      "Failed to scrape paper from tabId " +
+        sender.tab.id +
+        " due to the following error:"
+    );
     console.log(message.error);
   },
 };

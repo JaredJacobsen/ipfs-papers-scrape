@@ -35,8 +35,9 @@
     "storage",
     "http://*/*",
     "https://*/*",
-    "*://*/*"
+    "*://*/*",
+    ""
   ],
-  "host_permissions": ["*://*/*", "http://*/*", "https://*/*"],
+  "host_permissions": ["*://*/*", "http://*/*", "https://*/*", ""],
   "manifest_version": 3
 }

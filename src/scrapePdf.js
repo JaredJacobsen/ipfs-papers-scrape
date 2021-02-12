@@ -1,9 +1,14 @@
 import { toString } from "lodash/fp";
 import { MESSAGE_TYPES } from "./constants";
+import getOptions from "./functions/get-options";
 
 (async () => {
   try {
-    const response = await fetch(location.href);
+    const options = await getOptions();
+
+    const response = await fetch(
+      options && options.indirectFetch ? options.url : location.href
+    );
 
     if (response.ok) {
       chrome.runtime.sendMessage({
