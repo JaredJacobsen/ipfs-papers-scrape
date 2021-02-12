@@ -1,6 +1,7 @@
 import storage from "../storage";
+import tabReady from "./tabs/tab-ready";
 import getActiveTab from "./utils/get-active-tab";
-import urlOrigin from "./utils/url-origin";
+import origin from "./utils/origin";
 
 export default async function executeScript(details) {
   if (!details.newTab) {
@@ -14,27 +15,17 @@ export default async function executeScript(details) {
     });
   } else {
     const newTab = await chrome.tabs.create({
-      url: details.indirectFetch ? urlOrigin(url) : url,
+      url: origin(url),
       active: false,
     });
 
-    try {
-      chrome.webNavigation.onCommitted.addListener(async function listener({
-        tabId,
-      }) {
-        if (tabId === newTab.id) {
-          chrome.webNavigation.onCommitted.removeListener(listener);
+    await tabReady(newTab.id);
 
-          await storage.set(newTab.id, details);
+    await storage.set(newTab.id, details);
 
-          chrome.scripting.executeScript({
-            target: { tabId: newTab.id },
-            files: [details.script],
-          });
-        }
-      });
-    } catch (error) {
-      details.onError(error);
-    }
+    chrome.scripting.executeScript({
+      target: { tabId: newTab.id },
+      files: [details.script],
+    });
   }
 }

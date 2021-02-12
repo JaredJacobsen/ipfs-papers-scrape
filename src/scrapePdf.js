@@ -4,11 +4,9 @@ import getDetails from "./functions/get-details";
 
 (async () => {
   try {
-    const details = await getDetails();
+    const { url } = await getDetails();
 
-    const response = await fetch(
-      details && details.indirectFetch ? details.url : location.href
-    );
+    const response = await fetch(url);
 
     if (response.ok) {
       chrome.runtime.sendMessage({

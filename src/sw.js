@@ -21,39 +21,26 @@ const ipfs = IpfsHttpClient(ipfsUrl);
 //TODO I need some sort of cache in case the user tries to scrape twice.
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   const tabId = sender.tab && sender.tab.id;
-  console.log("tabId: ", tabId);
   const details = await storage.get(tabId);
-  console.log("details: ", details, tabId);
-  if (
-    details &&
-    details.closeTabOnResponse &&
-    message.type !== MESSAGE_TYPES.DETAILS
-  ) {
+
+  if (details && details.newTab && message.type !== MESSAGE_TYPES.DETAILS) {
     chrome.tabs.remove(tabId);
   }
 
-  console.log("Message: ", message);
+  console.log({ tabId, message, details });
+
   messageHandlers[message.type](message, sender, sendResponse);
 });
 
 const messageHandlers = {
-  [MESSAGE_TYPES.SCRAPE_ACTIVE_TAB]: async () => {
-    executeScript({ script: "scrapeHtmlOrPdf.js", indirectFetch: true });
-  },
-
-  [MESSAGE_TYPES.SCRAPE_NEW_TAB]: async (message) => {
-    const { url } = await getActiveTab();
+  [MESSAGE_TYPES.SCRAPE]: async (message) => {
+    const activeTab = await getActiveTab();
+    const newTab = !sameOrigin(activeTab.url, message.url);
 
     executeScript({
-      newTab: !sameOrigin(url, message.url),
+      newTab,
       url: message.url,
       script: "scrapeHtmlOrPdf.js",
-      closeTabOnResponse: true,
-      indirectFetch: true,
-      onError: (error) => {
-        console.log(error);
-        displayPopupMessage("Failed to Scrape Paper");
-      },
     });
   },
 
@@ -66,19 +53,13 @@ const messageHandlers = {
     if (url_for_pdf) {
       console.log("fetching pdf from: ", title);
 
-      const { url } = await getActiveTab();
+      const activeTab = await getActiveTab();
 
       executeScript({
-        newTab: !sameOrigin(url, url_for_pdf),
+        newTab: !sameOrigin(activeTab.url, url_for_pdf),
         url: url_for_pdf,
         script: "scrapePdf.js",
         title,
-        closeTabOnResponse: true,
-        indirectFetch: true,
-        onError: (error) => {
-          console.log(error);
-          displayPopupMessage("Failed to Scrape Paper");
-        },
       });
     } else {
       //fetch scihub

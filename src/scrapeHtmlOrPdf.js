@@ -5,11 +5,9 @@ import isPdf from "./functions/utils/is-pdf";
 
 (async () => {
   try {
-    const details = await getDetails();
+    const { url } = await getDetails();
 
-    const response = await fetch(
-      details && details.indirectFetch ? details.url : location.href
-    );
+    const response = await fetch(url);
 
     if (response.ok) {
       const responseClone = response.clone();

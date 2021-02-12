@@ -22,7 +22,7 @@ const buttonCssText = `
 
   btn.addEventListener("click", () => {
     chrome.runtime.sendMessage({
-      type: MESSAGE_TYPES.SCRAPE_NEW_TAB,
+      type: MESSAGE_TYPES.SCRAPE,
       url,
     });
   });
