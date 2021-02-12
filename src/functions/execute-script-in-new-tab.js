@@ -1,20 +1,12 @@
 import storage from "../storage";
-import poll from "./utils/poll";
 
-export default async function executeScriptInNewTab({
-  options = {},
-  script,
-  onError = (e) => console.log(e),
-}) {
-  let url = options.url;
-  console.log("url1: ", url);
-  if (options.indirectFetch) {
+export default async function executeScriptInNewTab(details) {
+  let { url } = details;
+  if (details.indirectFetch) {
     const scheme = url.split("://")[0];
     const { hostname } = new URL(url);
     url = scheme + "://" + hostname;
   }
-
-  console.log("url", url);
 
   const newTab = await chrome.tabs.create({
     url,
@@ -22,23 +14,21 @@ export default async function executeScriptInNewTab({
   });
 
   try {
-    await poll(
-      async () => {
-        console.log("Fetching tab", newTab.id);
-        const tab = await chrome.tabs.get(newTab.id); //TODO if the tab is closed right away, a "no tab id found" error will happen
-        return tab.status === "complete";
-      },
-      20000,
-      100
-    );
+    chrome.webNavigation.onCommitted.addListener(async function listener({
+      tabId,
+    }) {
+      if (tabId === newTab.id) {
+        chrome.webNavigation.onCommitted.removeListener(listener);
 
-    await storage.set(newTab.id, options);
+        await storage.set(newTab.id, details);
 
-    chrome.scripting.executeScript({
-      target: { tabId: newTab.id },
-      files: [script],
+        chrome.scripting.executeScript({
+          target: { tabId: newTab.id },
+          files: [details.script],
+        });
+      }
     });
   } catch (error) {
-    onError(error);
+    details.onError(error);
   }
 }

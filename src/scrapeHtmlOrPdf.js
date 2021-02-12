@@ -1,14 +1,14 @@
 import { toString } from "lodash/fp";
 import { MESSAGE_TYPES } from "./constants";
-import getOptions from "./functions/get-options";
+import getDetails from "./functions/get-details";
 import isPdf from "./functions/utils/is-pdf";
 
 (async () => {
   try {
-    const options = await getOptions();
+    const details = await getDetails();
 
     const response = await fetch(
-      options && options.indirectFetch ? options.url : location.href
+      details && details.indirectFetch ? details.url : location.href
     );
 
     if (response.ok) {

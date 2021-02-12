@@ -21,11 +21,11 @@ const ipfs = IpfsHttpClient(ipfsUrl);
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   const tabId = sender.tab && sender.tab.id;
   console.log("tabId: ", tabId);
-  const options = await storage.get(tabId);
-  console.log("options: ", options, tabId);
+  const details = await storage.get(tabId);
+  console.log("details: ", details, tabId);
   if (
-    options &&
-    options.closeTabOnResponse &&
+    details &&
+    details.closeTabOnResponse &&
     contains(message.type, [
       MESSAGE_TYPES.SCRAPE_NEW_TAB,
       MESSAGE_TYPES.HTML,
@@ -54,12 +54,10 @@ const messageHandlers = {
 
   [MESSAGE_TYPES.SCRAPE_NEW_TAB]: async (message) => {
     executeScriptInNewTab({
-      options: {
-        url: message.url,
-        closeTabOnResponse: true,
-        indirectFetch: true,
-      },
+      url: message.url,
       script: "scrapeHtmlOrPdf.js",
+      closeTabOnResponse: true,
+      indirectFetch: true,
       onError: (error) => {
         console.log(error);
         displayPopupMessage("Failed to Scrape Paper");
@@ -77,13 +75,11 @@ const messageHandlers = {
       console.log("fetching pdf from: ", title);
 
       executeScriptInNewTab({
-        options: {
-          url: url_for_pdf,
-          title,
-          closeTabOnResponse: true,
-          indirectFetch: true,
-        },
+        url: url_for_pdf,
         script: "scrapePdf.js",
+        title,
+        closeTabOnResponse: true,
+        indirectFetch: true,
         onError: (error) => {
           console.log(error);
           displayPopupMessage("Failed to Scrape Paper");
@@ -123,10 +119,10 @@ const messageHandlers = {
     );
   },
 
-  [MESSAGE_TYPES.OPTIONS]: async (_, sender, sendResponse) => {
-    const options = await storage.get(sender.tab.id);
-    console.log("options: ", options);
-    sendResponse(options);
+  [MESSAGE_TYPES.DETAILS]: async (_, sender, sendResponse) => {
+    const details = await storage.get(sender.tab.id);
+    console.log("details: ", details);
+    sendResponse(details);
   },
 
   [MESSAGE_TYPES.ERROR]: async (message, sender) => {

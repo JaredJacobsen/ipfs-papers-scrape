@@ -3,7 +3,6 @@ import { toString } from "lodash/fp";
 const storage = {
   set: (key, value) => {
     key = toString(key);
-    console.log("setting storage", key, value);
     return new Promise((resolve) =>
       chrome.storage.local.set({ [key]: value }, resolve)
     );
