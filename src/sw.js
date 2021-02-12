@@ -1,5 +1,4 @@
 // import Tesseract from "tesseract.js";
-import { contains } from "lodash/fp";
 import IpfsHttpClient from "ipfs-http-client";
 import displayPopupMessage from "./functions/display-popup-message";
 import { MESSAGE_TYPES } from "./constants";
@@ -9,8 +8,10 @@ import { ipfsUrl } from "../config";
 import pdfObjectUrlToBlob from "./functions/pdf/pdf-object-url-to-blob";
 import textToMetadata from "./functions/metadata/textToMetadata";
 import saveMetadata from "./functions/metadata/save-metadata";
-import executeScriptInNewTab from "./functions/execute-script-in-new-tab";
 import storage from "./storage";
+import executeScript from "./functions/execute-script";
+import getActiveTab from "./functions/utils/get-active-tab";
+import sameOrigin from "./functions/utils/same-origin";
 
 const ipfs = IpfsHttpClient(ipfsUrl);
 
@@ -26,11 +27,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (
     details &&
     details.closeTabOnResponse &&
-    contains(message.type, [
-      MESSAGE_TYPES.SCRAPE_NEW_TAB,
-      MESSAGE_TYPES.HTML,
-      MESSAGE_TYPES.ERROR,
-    ])
+    message.type !== MESSAGE_TYPES.DETAILS
   ) {
     chrome.tabs.remove(tabId);
   }
@@ -41,19 +38,14 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 
 const messageHandlers = {
   [MESSAGE_TYPES.SCRAPE_ACTIVE_TAB]: async () => {
-    const tabs = await chrome.tabs.query({
-      active: true,
-      lastFocusedWindow: true,
-    });
-
-    chrome.scripting.executeScript({
-      target: { tabId: tabs[0].id },
-      files: ["scrapeHtmlOrPdf.js"],
-    });
+    executeScript({ script: "scrapeHtmlOrPdf.js", indirectFetch: true });
   },
 
   [MESSAGE_TYPES.SCRAPE_NEW_TAB]: async (message) => {
-    executeScriptInNewTab({
+    const { url } = await getActiveTab();
+
+    executeScript({
+      newTab: !sameOrigin(url, message.url),
       url: message.url,
       script: "scrapeHtmlOrPdf.js",
       closeTabOnResponse: true,
@@ -74,7 +66,10 @@ const messageHandlers = {
     if (url_for_pdf) {
       console.log("fetching pdf from: ", title);
 
-      executeScriptInNewTab({
+      const { url } = await getActiveTab();
+
+      executeScript({
+        newTab: !sameOrigin(url, url_for_pdf),
         url: url_for_pdf,
         script: "scrapePdf.js",
         title,
