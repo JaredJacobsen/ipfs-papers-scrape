@@ -1,5 +1,5 @@
-import { appDataDirectory, ipfsUrl } from "../../../config";
 import displayPopupMessage from "../display-popup-message";
+import getOptions from "../getOptions";
 import isIpfsReachable from "../utils/is-ipfs-unreachable";
 import titleToFilename from "./title-to-filename";
 
@@ -7,6 +7,8 @@ import titleToFilename from "./title-to-filename";
 //TODO what if metadata for the paper already exists?
 export default async function saveMetadata(ipfs, metadata) {
   console.log("Saving metadata: ", metadata);
+
+  const { appDataDirectory, ipfsUrl } = await getOptions();
 
   try {
     const reachable = await isIpfsReachable(ipfs);

@@ -4,7 +4,6 @@ import displayPopupMessage from "./functions/display-popup-message";
 import { MESSAGE_TYPES } from "./constants";
 import extractTextFromPdf from "./functions/pdf/extract-text-from-pdf";
 import savePdf from "./functions/pdf/save-pdf";
-import { ipfsUrl } from "../config";
 import pdfObjectUrlToBlob from "./functions/pdf/pdf-object-url-to-blob";
 import textToMetadata from "./functions/metadata/textToMetadata";
 import saveMetadata from "./functions/metadata/save-metadata";
@@ -12,28 +11,31 @@ import storage from "./storage";
 import executeScript from "./functions/execute-script";
 import getActiveTab from "./functions/utils/get-active-tab";
 import sameOrigin from "./functions/utils/same-origin";
-
-const ipfs = IpfsHttpClient(ipfsUrl);
+import getOptions from "./functions/getOptions";
 
 //#region scrape paper
 
-//TODO how to clean up listeners? Will there only ever be one SW regardless of how many times the extension is activated?
-//TODO I need some sort of cache in case the user tries to scrape twice.
-chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-  const tabId = sender.tab && sender.tab.id;
-  const details = await storage.get(tabId);
+getOptions().then(({ ipfsUrl }) => {
+  const ipfs = IpfsHttpClient(ipfsUrl);
 
-  if (details && details.newTab && message.type !== MESSAGE_TYPES.DETAILS) {
-    chrome.tabs.remove(tabId);
-  }
+  chrome.runtime.onMessage.addListener(
+    async (message, sender, sendResponse) => {
+      const tabId = sender.tab && sender.tab.id;
+      const details = await storage.get(tabId);
 
-  console.log({ tabId, message, details });
+      if (details && details.newTab && message.type !== MESSAGE_TYPES.DETAILS) {
+        chrome.tabs.remove(tabId);
+      }
 
-  messageHandlers[message.type](message, sender, sendResponse);
+      console.log({ tabId, message, details });
+
+      messageHandlers[message.type]({ ipfs, message, sender, sendResponse });
+    }
+  );
 });
 
 const messageHandlers = {
-  [MESSAGE_TYPES.SCRAPE]: async (message) => {
+  [MESSAGE_TYPES.SCRAPE]: async ({ message }) => {
     const activeTab = await getActiveTab();
     const newTab = !sameOrigin(activeTab.url, message.url);
 
@@ -44,7 +46,7 @@ const messageHandlers = {
     });
   },
 
-  [MESSAGE_TYPES.HTML]: async (message) => {
+  [MESSAGE_TYPES.HTML]: async ({ ipfs, message }) => {
     const metadata = await textToMetadata(message.html);
     await saveMetadata(ipfs, metadata);
     console.log("metadata", metadata);
@@ -66,7 +68,11 @@ const messageHandlers = {
     }
   },
 
-  [MESSAGE_TYPES.PDF_WITH_SAVED_METADATA]: async (message, sender) => {
+  [MESSAGE_TYPES.PDF_WITH_SAVED_METADATA]: async ({
+    ipfs,
+    message,
+    sender,
+  }) => {
     const pdf = await pdfObjectUrlToBlob(message.pdf);
 
     const { title } = await storage.get(sender.tab.id);
@@ -77,7 +83,7 @@ const messageHandlers = {
     );
   },
 
-  [MESSAGE_TYPES.PDF_WITHOUT_SAVED_METADATA]: async (message) => {
+  [MESSAGE_TYPES.PDF_WITHOUT_SAVED_METADATA]: async ({ ipfs, message }) => {
     const pdf = await pdfObjectUrlToBlob(message.pdf);
 
     const text = await extractTextFromPdf(pdf);
@@ -95,13 +101,13 @@ const messageHandlers = {
     );
   },
 
-  [MESSAGE_TYPES.DETAILS]: async (_, sender, sendResponse) => {
+  [MESSAGE_TYPES.DETAILS]: async ({ sender, sendResponse }) => {
     const details = await storage.get(sender.tab.id);
     console.log("details: ", details);
     sendResponse(details);
   },
 
-  [MESSAGE_TYPES.ERROR]: async (message, sender) => {
+  [MESSAGE_TYPES.ERROR]: async ({ message, sender }) => {
     console.log(
       "Failed to scrape paper from tabId " +
         sender.tab.id +

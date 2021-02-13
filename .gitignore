@@ -1,6 +1,8 @@
 node_modules
 dist/popup.js
 dist/popup.js.LICENSE.txt
+dist/options.js
+dist/options.js.LICENSE.txt
 dist/googleScholarContentScript.js
 dist/googleScholarContentScript.js.LICENSE.txt
 dist/scrapeHtmlOrPdf.js

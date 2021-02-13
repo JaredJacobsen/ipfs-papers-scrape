@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Decent Papers | Options</title>
+  </head>
+  <body>
+    <h1>Decent Papers Options</h1>
+
+    <hr />
+
+    <h2>URLs</h2>
+
+    <span class="option-name-span"> IPFS API URL </span>
+    <input type="text" id="ipfs-url" />
+    <br />
+    <br />
+
+    <span class="option-name-span"> Unpaywall API URL </span>
+    <input type="text" id="unpaywall-api-url" />
+    <br />
+    <br />
+
+    <span class="option-name-span"> Scihub URL </span>
+    <input type="text" id="scihub-url" />
+    <br />
+    <br />
+
+    <hr />
+
+    <h2>Save Data</h2>
+
+    <span class="option-name-span"> Save metadata </span>
+    <label class="switch">
+      <input type="checkbox" id="save-metadata" />
+      <span class="slider round" />
+    </label>
+    <br />
+    <br />
+
+    <span class="option-name-span"> Save to device </span>
+    <label class="switch">
+      <input type="checkbox" id="save-to-device" />
+      <span class="slider round" />
+    </label>
+    <br />
+    <br />
+
+    <span class="option-name-span"> Device app data directory </span>
+    <input type="text" id="device-app-data-directory" />
+    <br />
+    <br />
+
+    <span class="option-name-span"> Save to IPFS </span>
+    <label class="switch">
+      <input type="checkbox" id="save-to-ipfs" />
+      <span class="slider round" />
+    </label>
+    <br />
+    <br />
+
+    <span class="option-name-span"> IPFS app data directory </span>
+    <input type="text" id="ipfs-app-data-directory" />
+    <br />
+    <br />
+
+    <span class="option-name-span"> Save to Arweave </span>
+    <label class="switch">
+      <input type="checkbox" id="save-to-arweave" />
+      <span class="slider round" />
+    </label>
+    <br />
+    <br />
+
+    <hr />
+
+    <h2>Fetch Data</h2>
+
+    <span class="option-name-span"> Fetch from Scihub </span>
+    <label class="switch">
+      <input type="checkbox" id="fetch-scihub" />
+      <span class="slider round" />
+    </label>
+    <br />
+    <br />
+
+    <span class="option-name-span"> Fetch from IPFS </span>
+    <label class="switch">
+      <input type="checkbox" id="fetch-ipfs" />
+      <span class="slider round" />
+    </label>
+    <br />
+    <br />
+
+    <hr />
+
+    <div id="status"></div>
+    <button id="save">Save</button>
+    <button id="reset">Reset</button>
+
+    <script src="options.js"></script>
+
+    <style>
+      input[type="text"] {
+        width: 400px;
+      }
+
+      .option-name-span {
+        width: 200px;
+        text-align: left;
+        display: inline-block;
+        font-size: 12pt;
+      }
+
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 30px;
+        height: 17px;
+      }
+
+      /* Hide default HTML checkbox */
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      /* The slider */
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        -webkit-transition: 0.2s;
+        transition: 0.2s;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 13px;
+        width: 13px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        -webkit-transition: 0.2s;
+        transition: 0.2s;
+      }
+
+      input:checked + .slider {
+        background-color: #2196f3;
+      }
+
+      input:focus + .slider {
+        box-shadow: 0 0 1px #2196f3;
+      }
+
+      input:checked + .slider:before {
+        -webkit-transform: translateX(13px);
+        -ms-transform: translateX(13px);
+        transform: translateX(13px);
+      }
+
+      /* Rounded sliders */
+      .slider.round {
+        border-radius: 17px;
+      }
+
+      .slider.round:before {
+        border-radius: 50%;
+      }
+    </style>
+  </body>
+</html>

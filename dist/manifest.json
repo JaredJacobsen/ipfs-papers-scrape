@@ -20,6 +20,7 @@
       "js": ["googleScholarContentScript.js"]
     }
   ],
+  "options_page": "options.html",
   "icons": {
     "16": "assets/images/paper_icon.png",
     "32": "assets/images/paper_icon.png",

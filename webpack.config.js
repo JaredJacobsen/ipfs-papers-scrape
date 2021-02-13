@@ -17,6 +17,7 @@ module.exports = {
     scrapeHtmlOrPdf: "./src/scrapeHtmlOrPdf.js",
     scrapePdf: "./src/scrapePdf.js",
     googleScholarContentScript: "./src/googleScholarContentScript.js",
+    options: "./src/options.js",
   },
   output: {
     path: path.resolve(__dirname, "dist"),

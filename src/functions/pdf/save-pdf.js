@@ -1,10 +1,12 @@
-import { appDataDirectory, ipfsUrl } from "../../../config";
 import titleToFilename from "../metadata/title-to-filename";
 import displayPopupMessage from "../display-popup-message";
 import isIpfsReachable from "../utils/is-ipfs-unreachable";
+import getOptions from "../getOptions";
 
 //Returns saved: boolean
 export default async function savePdf(ipfs, title, pdf) {
+  const { appDataDirectory, ipfsUrl } = await getOptions();
+
   try {
     const reachable = await isIpfsReachable(ipfs);
     if (!reachable) {
