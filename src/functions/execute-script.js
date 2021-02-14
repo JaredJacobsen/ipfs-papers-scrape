@@ -15,7 +15,7 @@ export default async function executeScript(details) {
     });
   } else {
     const newTab = await chrome.tabs.create({
-      url: origin(url),
+      url: origin(details.url),
       active: false,
     });
 

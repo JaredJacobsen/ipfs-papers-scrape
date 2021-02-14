@@ -5,7 +5,7 @@ import getOptions from "../getOptions";
 
 //Returns saved: boolean
 export default async function savePdf(ipfs, title, pdf) {
-  const { appDataDirectory, ipfsUrl } = await getOptions();
+  const { ipfsAppDataDirectory, ipfsUrl } = await getOptions();
 
   try {
     const reachable = await isIpfsReachable(ipfs);
@@ -22,7 +22,7 @@ export default async function savePdf(ipfs, title, pdf) {
       const cid = (await ipfs.add(pdf)).cid.string;
 
       //Copy pdf to MFS, but first create pdf dir if it doesn't exist. {parents: true} doesn't work with cp so the parent dir must be created first
-      const pdfDir = appDataDirectory + "pdf_files/";
+      const pdfDir = ipfsAppDataDirectory + "pdf_files/";
       ipfs.files.mkdir(pdfDir, { parents: true });
       const mfsPdfPath = pdfDir + titleToFilename(title) + ".pdf";
       await ipfs.files.cp("/ipfs/" + cid, mfsPdfPath);

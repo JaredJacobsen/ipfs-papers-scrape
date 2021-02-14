@@ -8,7 +8,7 @@ import titleToFilename from "./title-to-filename";
 export default async function saveMetadata(ipfs, metadata) {
   console.log("Saving metadata: ", metadata);
 
-  const { appDataDirectory, ipfsUrl } = await getOptions();
+  const { ipfsAppDataDirectory, ipfsUrl } = await getOptions();
 
   try {
     const reachable = await isIpfsReachable(ipfs);
@@ -20,7 +20,7 @@ export default async function saveMetadata(ipfs, metadata) {
       );
     } else {
       await ipfs.files.write(
-        appDataDirectory + "papers/" + titleToFilename(metadata.title),
+        ipfsAppDataDirectory + "papers/" + titleToFilename(metadata.title),
         JSON.stringify(metadata),
         {
           create: true,

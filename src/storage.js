@@ -10,7 +10,7 @@ const storage = {
 
   get: (key) => {
     key = toString(key);
-    return new Promise((resolve, reject) =>
+    return new Promise((resolve) =>
       chrome.storage.local.get([key], ({ [key]: value }) => resolve(value))
     );
   },
