@@ -1,6 +1,6 @@
-//This code was copied from https://github.com/kevva/is-pdf/blob/master/index.js
-
-export default function isPdf(buf) {
+export default function isPdfResponse(response) {
+  const clone = response.clone()
+  const buf = await clone.arrayBuffer();
   if (!buf || buf.length < 4) {
     return false;
   }

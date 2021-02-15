@@ -6,14 +6,14 @@ import titleToFilename from "./title-to-filename";
 //TODO should return boolean?
 //TODO what if metadata for the paper already exists?
 export default async function saveMetadata(ipfs, metadata) {
-  console.log("Saving metadata: ", metadata);
-
   const { ipfsAppDataDirectory, ipfsUrl } = await getOptions();
 
   try {
     const reachable = await isIpfsReachable(ipfs);
     if (!reachable) {
       console.log("IPFS unreachable at " + ipfsUrl);
+
+      //TODO extract user messaged out into USER_MESSAGES object
       displayPopupMessage(
         "Sorry, metadata was not saved because IPFS is unreachable. Make sure that IPFS is running at " +
           ipfsUrl

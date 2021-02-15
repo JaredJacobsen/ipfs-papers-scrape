@@ -16,5 +16,5 @@ chrome.runtime.onMessage.addListener(async function listener(request) {
 
 chrome.runtime.sendMessage({
   type: MESSAGE_TYPES.SCRAPE,
-  url: location.href,
+  scrapeActiveTab: true,
 });
