@@ -1,3 +1,5 @@
+export default async function fetchPdfFromScihub(doi) {}
+
 // async function fetchPdf(metadata) {
 //   const fetchFromScihub = !metadata.url_for_pdf; //TODO check if settings allow scihub
 //   const createTabUrl = fetchFromScihub

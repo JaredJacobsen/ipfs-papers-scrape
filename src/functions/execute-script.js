@@ -1,6 +1,6 @@
 //WrappedAsyncFunc must be of the form: () => asyncFunc.then((result) => chrome.runtime.sendMessage({ result, id: "an id matching the id arg to executeAsyncFunc" }))
 export default async function executeScript({ tabId, id, args, script, func }) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     chrome.runtime.onMessage.addListener(function listener(
       message,
       sender,
@@ -11,6 +11,9 @@ export default async function executeScript({ tabId, id, args, script, func }) {
           return sendResponse(args);
         } else if (message.type === "end") {
           chrome.runtime.onMessage.removeListener(listener);
+          if (message.error) {
+            reject(message.error);
+          }
           resolve(message.result);
         }
       }
@@ -30,37 +33,3 @@ export default async function executeScript({ tabId, id, args, script, func }) {
     );
   });
 }
-
-// import storage from "../storage";
-// import tabReady from "./tabs/tab-ready";
-// import getActiveTab from "./utils/get-active-tab";
-// import origin from "./utils/origin";
-
-// export default async function executeScript(details) {
-//   return new Promise(async (resolve) => {
-//     if (!details.newTab) {
-//       const { id } = await getActiveTab();
-
-//       await storage.set(id, details);
-
-//       chrome.scripting.executeScript({
-//         target: { tabId: id },
-//         files: [details.script],
-//       });
-//     } else {
-//       const newTab = await chrome.tabs.create({
-//         url: origin(details.url),
-//         active: false,
-//       });
-
-//       await tabReady(newTab.id);
-
-//       await storage.set(newTab.id, details);
-
-//       chrome.scripting.executeScript({
-//         target: { tabId: newTab.id },
-//         files: [details.script],
-//       });
-//     }
-//   });
-// }

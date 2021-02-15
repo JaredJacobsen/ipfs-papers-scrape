@@ -16,5 +16,4 @@ chrome.runtime.onMessage.addListener(async function listener(request) {
 
 chrome.runtime.sendMessage({
   type: MESSAGE_TYPES.SCRAPE,
-  scrapeActiveTab: true,
 });
