@@ -1,7 +1,7 @@
 import titleToFilename from "../metadata/title-to-filename";
-import displayPopupMessage from "../display-popup-message";
+import displayPopupMessage from "../utils/display-popup-message";
 import isIpfsReachable from "../utils/is-ipfs-unreachable";
-import getOptions from "../getOptions";
+import getOptions from "../utils/getOptions";
 
 export default async function savePdf(ipfs, title, pdf) {
   const { ipfsAppDataDirectory, ipfsUrl } = await getOptions();

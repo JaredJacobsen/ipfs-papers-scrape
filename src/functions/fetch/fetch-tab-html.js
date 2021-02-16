@@ -1,4 +1,4 @@
-export default function getTabHtml(tabId) {
+export default function fetchTabHtml(tabId) {
   return new Promise((resolve) =>
     chrome.scripting.executeScript(
       {

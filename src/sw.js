@@ -1,8 +1,7 @@
 import IpfsHttpClient from "ipfs-http-client";
 import { MESSAGE_TYPES } from "./constants";
-import storage from "./storage";
-import getOptions from "./functions/getOptions";
-import messageHandlers from "./messageHandlers";
+import getOptions from "./functions/utils/getOptions";
+import scrapeNewTab from "./functions/scrape-new-tab";
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -12,7 +11,6 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-//TODO maybe I should getOptions inside listeners so that listeners will be registered immediately
 getOptions().then(({ ipfsUrl }) => {
   const ipfs = IpfsHttpClient(ipfsUrl);
 
@@ -21,13 +19,7 @@ getOptions().then(({ ipfsUrl }) => {
       console.log(JSON.stringify(info));
 
       if (info.linkUrl) {
-        messageHandlers[MESSAGE_TYPES.SCRAPE]({
-          ipfs,
-          message: {
-            type: MESSAGE_TYPES.SCRAPE,
-            url: info.linkUrl,
-          },
-        });
+        scrapeNewTab(ipfs, info.linkUrl);
       } else {
         await chrome.tabs.create({
           url:
@@ -39,17 +31,14 @@ getOptions().then(({ ipfsUrl }) => {
     }
   });
 
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    const tabId = sender.tab && sender.tab.id;
-    storage.get(tabId).then((details) => {
-      if (details && details.newTab && message.type !== MESSAGE_TYPES.DETAILS) {
-        chrome.tabs.remove(tabId);
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === MESSAGE_TYPES.SCRAPE) {
+      if (message.url) {
+        scrapeNewTab(ipfs, message.url);
+      } else {
+        scrapeActiveTab(ipfs);
       }
-
-      console.log("onMessage triggered: ", { tabId, message, details });
-
-      messageHandlers[message.type]({ ipfs, message, sender, sendResponse });
-    });
-    return true; //event listener must return true to keep message port alive to sendResponse
+    }
+    return true; //event listener must return true to keep message port alive for sendResponse to work
   });
 });

@@ -1,5 +1,5 @@
-import displayPopupMessage from "../display-popup-message";
-import getOptions from "../getOptions";
+import displayPopupMessage from "../utils/display-popup-message";
+import getOptions from "../utils/getOptions";
 import isIpfsReachable from "../utils/is-ipfs-unreachable";
 import titleToFilename from "./title-to-filename";
 

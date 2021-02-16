@@ -1,4 +1,4 @@
-import defaultOptions from "../defaultOptions";
+import defaultOptions from "../../defaultOptions";
 
 export default function getOptions() {
   return new Promise((resolve) =>

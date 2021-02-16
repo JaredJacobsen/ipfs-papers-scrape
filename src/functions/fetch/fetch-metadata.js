@@ -1,5 +1,5 @@
-import getOptions from "../getOptions";
-import transformUnpaywallMetadata from "./transform-unpaywall-metadata";
+import getOptions from "../utils/getOptions";
+import transformUnpaywallMetadata from "../metadata/transform-unpaywall-metadata";
 
 export default async function fetchMetadata(doi) {
   try {
