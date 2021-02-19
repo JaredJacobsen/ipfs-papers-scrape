@@ -1,40 +1,55 @@
+import download from "../utils/download";
 import displayPopupMessage from "../utils/display-popup-message";
 import getOptions from "../utils/getOptions";
 import isIpfsReachable from "../utils/is-ipfs-unreachable";
 import titleToFilename from "./title-to-filename";
 
-//TODO should return boolean?
+//TODO what should this return? What to the callers need to know failed?
 //TODO what if metadata for the paper already exists?
 export default async function saveMetadata(ipfs, metadata) {
-  const { ipfsAppDataDirectory, ipfsUrl } = await getOptions();
+  const {
+    saveMetadata,
+    saveToIpfs,
+    ipfsAppDataDirectory,
+    ipfsUrl,
+    saveToDevice,
+    deviceAppDataDirectory,
+  } = await getOptions();
 
-  try {
-    const reachable = await isIpfsReachable(ipfs);
-    if (!reachable) {
-      console.log("IPFS unreachable at " + ipfsUrl);
+  if (!saveMetadata) {
+    return false;
+  }
 
-      //TODO extract user messaged out into USER_MESSAGES object
-      displayPopupMessage(
-        "Sorry, metadata was not saved because IPFS is unreachable. Make sure that IPFS is running at " +
-          ipfsUrl
-      );
-    } else {
-      await ipfs.files.write(
-        ipfsAppDataDirectory + "papers/" + titleToFilename(metadata.title),
-        JSON.stringify(metadata),
-        {
-          create: true,
-          parents: true,
-        }
-      );
+  const filename = "papers/" + titleToFilename(metadata.title);
+  const data = JSON.stringify(metadata);
+
+  if (saveToIpfs) {
+    try {
+      //TODO is it even necessary to check if reachable here? Saving when not reachable should just throw an error
+      const reachable = await isIpfsReachable(ipfs);
+      if (!reachable) {
+        throw "IPFS unreachable at " + ipfsUrl;
+      }
+
+      await ipfs.files.write(ipfsAppDataDirectory + filename, data, {
+        create: true,
+        parents: true,
+      });
 
       displayPopupMessage("Saved metadata to IPFS");
 
       return true;
+    } catch (error) {
+      console.log("Failed to save paper metadata to IPFS");
     }
-  } catch (error) {
-    console.log("Failed to save paper metadata");
-    throw error;
+  }
+
+  if (saveToDevice) {
+    try {
+      await download(deviceAppDataDirectory + filename, data);
+    } catch (error) {
+      console.log("Failed to save paper to device.");
+    }
   }
   return false;
 }
