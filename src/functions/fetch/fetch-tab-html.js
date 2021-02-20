@@ -5,7 +5,7 @@ export default function fetchTabHtml(tabId) {
         target: { tabId },
         function: () => document.documentElement.outerHTML,
       },
-      resolve
+      (results) => resolve(results[0].result)
     )
   );
 }

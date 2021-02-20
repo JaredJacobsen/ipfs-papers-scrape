@@ -12,8 +12,9 @@ import isHtmlDisplayingPdf from "./utils/is-html-displaying-pdf";
 export default async function scrapeActiveTab(ipfs) {
   const activeTab = await getActiveTab();
 
-  console.log("Fetching html in active tab");
+  console.log("Fetching html in active tab ", activeTab.id);
   const html = await fetchTabHtml(activeTab.id);
+  console.log("html", html);
 
   let pdf, doi;
   if (isHtmlDisplayingPdf(html)) {

@@ -34,9 +34,6 @@
     "activeTab",
     "scripting",
     "storage",
-    "http://*/*",
-    "https://*/*",
-    "*://*/*",
     "webNavigation"
   ],
   "host_permissions": ["*://*/*", "http://*/*", "https://*/*"],

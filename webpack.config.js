@@ -15,7 +15,6 @@ module.exports = {
     popup: "./src/popup.js",
     sw: "./src/sw.js",
     scrapeHtmlOrPdf: "./src/scrapeHtmlOrPdf.js",
-    scrapePdf: "./src/scrapePdf.js",
     googleScholarContentScript: "./src/googleScholarContentScript.js",
     options: "./src/options.js",
   },

@@ -2,6 +2,7 @@ import IpfsHttpClient from "ipfs-http-client";
 import { MESSAGE_TYPES } from "./constants";
 import getOptions from "./functions/utils/getOptions";
 import scrapeNewTab from "./functions/scrape-new-tab";
+import scrapeActiveTab from "./functions/scrape-active-tab";
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({

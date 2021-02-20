@@ -5,6 +5,8 @@ import sendMessage from "./functions/utils/send-message";
   try {
     const args = await sendMessage({ id: "scrapeHtmlOrPdf", type: "start" });
 
+    console.log(JSON.stringify({ args }));
+
     const response = await fetch((args && args.url) || location.href);
 
     if (response.ok) {
@@ -19,6 +21,7 @@ import sendMessage from "./functions/utils/send-message";
       throw "bad response status: " + response.status;
     }
   } catch (error) {
+    console.log(error);
     sendMessage({ id: "test", type: "end", error });
   }
 })();

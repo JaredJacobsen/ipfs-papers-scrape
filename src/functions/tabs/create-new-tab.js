@@ -1,4 +1,4 @@
-import tabReady from "./tabs/tab-ready";
+import tabReady from "./tab-ready";
 
 export default async function createNewTab(url, active) {
   return new Promise(async (resolve) => {

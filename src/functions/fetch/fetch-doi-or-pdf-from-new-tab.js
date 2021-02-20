@@ -1,8 +1,8 @@
+import extractDoi from "../metadata/extract-doi";
+import extractTextFromPdf from "../pdf/extract-text-from-pdf";
 import createNewTab from "../tabs/create-new-tab";
+import origin from "../utils/origin";
 import fetchTabHtmlOrPdf from "./fetch-tab-html-or-pdf";
-import extractDoi from "./metadata/extract-doi";
-import extractTextFromPdf from "./pdf/extract-text-from-pdf";
-import origin from "./utils/origin";
 
 export default async function fetchDoiOrPdfFromNewTab(url, fromOrigin = false) {
   const tabUrl = fromOrigin ? origin(url) : url;

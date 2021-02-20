@@ -1,4 +1,4 @@
-import isPdfResponse from "./utils/is-pdf-response";
+import isPdfResponse from "../utils/is-pdf-response";
 
 export default async function fetchHtmlOrPdf(url) {
   console.log("Fetching html or pdf");
