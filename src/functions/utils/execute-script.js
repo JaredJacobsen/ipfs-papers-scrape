@@ -1,4 +1,5 @@
-//WrappedAsyncFunc must be of the form: () => asyncFunc.then((result) => chrome.runtime.sendMessage({ result, id: "an id matching the id arg to executeAsyncFunc" }))
+import { MESSAGE_TYPES } from "../../constants";
+
 export default async function executeScript({ tabId, id, args, script, func }) {
   return new Promise((resolve, reject) => {
     chrome.runtime.onMessage.addListener(function listener(
@@ -7,12 +8,12 @@ export default async function executeScript({ tabId, id, args, script, func }) {
       sendResponse
     ) {
       if (sender.tab.id === tabId && message.id === id) {
-        if (message.type === "start") {
+        if (message.type === MESSAGE_TYPES.ARGS) {
           return sendResponse(args);
-        } else if (message.type === "end") {
+        } else if (message.type === MESSAGE_TYPES.DONE) {
           chrome.runtime.onMessage.removeListener(listener);
           if (message.error) {
-            reject(message.error);
+            reject("executeScript failed. " + message.error);
           }
           resolve(message.result);
         }

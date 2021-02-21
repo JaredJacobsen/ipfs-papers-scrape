@@ -6,10 +6,10 @@ import fetchTabHtmlOrPdf from "./fetch-tab-html-or-pdf";
 
 export default async function fetchDoiOrPdfFromNewTab(url, fromOrigin = false) {
   const tabUrl = fromOrigin ? origin(url) : url;
-  console.log(`Fetching doi or pdf from ${url} in new tab at ${tabUrl}`);
+  log(`Fetching doi or pdf from ${url} in new tab at ${tabUrl}`);
   const newTab = await createNewTab(tabUrl, false);
 
-  console.log("Executing script in new tab");
+  log("Executing script in new tab");
   const { pdf, html } = await fetchTabHtmlOrPdf(
     newTab.id,
     fromOrigin ? { url } : {}

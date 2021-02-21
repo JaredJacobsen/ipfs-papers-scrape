@@ -1,4 +1,4 @@
-// console.log("yo");
+// log("yo");
 var host = process.env.HOST || "127.0.0.1";
 // Listen on a specific port via the PORT environment variable
 var port = process.env.PORT || 9999;
@@ -11,5 +11,5 @@ cors_proxy
     removeHeaders: ["cookie", "cookie2"],
   })
   .listen(port, host, function () {
-    console.log("Running CORS Anywhere on " + host + ":" + port);
+    log("Running CORS Anywhere on " + host + ":" + port);
   });

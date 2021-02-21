@@ -3,7 +3,7 @@ export default async function isIpfsReachable(ipfs) {
   try {
     await ipfs.id(); //Checks if IPFS is alive. Throws if not
   } catch (error) {
-    console.log("ipfs unreachable");
+    log("ipfs unreachable");
     reachable = false;
   }
   return reachable;

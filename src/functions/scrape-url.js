@@ -4,8 +4,9 @@ import fetchMetadata from "./fetch/fetch-metadata";
 import saveMetadata from "./metadata/save-metadata";
 import fetchPdf from "./fetch/fetch-pdf";
 import savePdf from "./pdf/save-pdf";
+import log from "./utils/log";
 
-export default async function scrapeNewTab(ipfs, url) {
+export default async function scrapeUrl(ipfs, url) {
   let { doi, pdf } = fetchDoiOrPdfDirectly(url);
 
   if (!doi) {
@@ -21,24 +22,24 @@ export default async function scrapeNewTab(ipfs, url) {
   }
 
   if (doi) {
-    console.log("Fetching metadata");
+    log("Fetching metadata");
     const metadata = await fetchMetadata(doi);
 
     if (metadata) {
-      console.log("Saving metadata: ", metadata);
+      log("Saving metadata: ", metadata);
       await saveMetadata(ipfs, metadata);
-      console.log("Saved metadata");
+      log("Saved metadata");
 
       pdf = pdf || (await fetchPdf(doi, metadata.url_for_pdf));
 
-      console.log("Saving pdf");
+      log("Saving pdf");
       pdf && (await savePdf(ipfs, metadata.title, pdf));
-      console.log("Saved pdf");
+      log("Saved pdf");
     } else {
       //TODO should still fetch pdf with doi even if metadata not found.
-      console.log("metadata not found");
+      log("metadata not found");
     }
   } else {
-    console.log("doi not found");
+    log("doi not found");
   }
 }

@@ -17,7 +17,7 @@ export default async function extractTextFromPdf(pdf) {
 
     return getPageText(1);
   } catch (error) {
-    console.log("Failed to extract PDF text");
+    log("Failed to extract PDF text");
     throw error;
   }
 }

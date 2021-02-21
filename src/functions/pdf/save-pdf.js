@@ -2,6 +2,7 @@ import titleToFilename from "../metadata/title-to-filename";
 import isIpfsReachable from "../utils/is-ipfs-unreachable";
 import getOptions from "../utils/getOptions";
 import download from "../utils/download";
+import log from "../utils/log";
 
 export default async function savePdf(ipfs, title, pdf) {
   const {
@@ -9,7 +10,6 @@ export default async function savePdf(ipfs, title, pdf) {
     ipfsAppDataDirectory,
     ipfsUrl,
     saveToDevice,
-    deviceAppDataDirectory,
   } = await getOptions();
 
   const filename = titleToFilename(title) + ".pdf";
@@ -30,18 +30,18 @@ export default async function savePdf(ipfs, title, pdf) {
         ipfs.files.mkdir(pdfDir, { parents: true });
         await ipfs.files.cp("/ipfs/" + cid, pdfDir + filename);
 
-        console.log("Saved PDF to IPFS: ", cid);
+        log("Saved pdf to ipfs, cid: ", cid);
       }
     } catch (error) {
-      console.log("Failed to save pdf to IPFS");
+      log("Failed to save pdf to ipfs.");
     }
   }
 
   if (saveToDevice) {
     try {
-      await download(deviceAppDataDirectory + filename, pdf);
+      await download("pdf_files/" + filename, pdf);
     } catch (error) {
-      console.log("Failed to save paper to device.");
+      log("Failed to save paper to device.");
     }
   }
 }

@@ -1,11 +1,9 @@
 import download from "../utils/download";
-import displayPopupMessage from "../utils/display-popup-message";
 import getOptions from "../utils/getOptions";
 import isIpfsReachable from "../utils/is-ipfs-unreachable";
 import titleToFilename from "./title-to-filename";
+import log from "../utils/log";
 
-//TODO what should this return? What to the callers need to know failed?
-//TODO what if metadata for the paper already exists?
 export default async function saveMetadata(ipfs, metadata) {
   const {
     saveMetadata,
@@ -13,7 +11,6 @@ export default async function saveMetadata(ipfs, metadata) {
     ipfsAppDataDirectory,
     ipfsUrl,
     saveToDevice,
-    deviceAppDataDirectory,
   } = await getOptions();
 
   if (!saveMetadata) {
@@ -25,7 +22,6 @@ export default async function saveMetadata(ipfs, metadata) {
 
   if (saveToIpfs) {
     try {
-      //TODO is it even necessary to check if reachable here? Saving when not reachable should just throw an error
       const reachable = await isIpfsReachable(ipfs);
       if (!reachable) {
         throw "IPFS unreachable at " + ipfsUrl;
@@ -36,19 +32,17 @@ export default async function saveMetadata(ipfs, metadata) {
         parents: true,
       });
 
-      displayPopupMessage("Saved metadata to IPFS");
-
-      return true;
+      log("Saved metadata to IPFS.");
     } catch (error) {
-      console.log("Failed to save paper metadata to IPFS");
+      log("Failed to save metadata to IPFS.");
     }
   }
 
   if (saveToDevice) {
     try {
-      await download(deviceAppDataDirectory + filename, data);
+      await download(filename, data);
     } catch (error) {
-      console.log("Failed to save paper to device.");
+      log("Failed to save paper to device.");
     }
   }
   return false;

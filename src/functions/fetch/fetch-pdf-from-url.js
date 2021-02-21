@@ -1,16 +1,29 @@
-import fetchPdfDirectly from "./fetch-pdf-directly";
+import log from "../utils/log";
+import fetchPdfFromServiceWorker from "./fetch-pdf-from-service-worker";
 import fetchPdfFromNewTab from "./fetch-pdf-from-new-tab";
 
 export default async function fetchPdfFromUrl(url) {
-  let pdf = await fetchPdfDirectly(url);
-
-  if (!pdf) {
-    pdf = await fetchPdfFromNewTab(url, true);
+  log("Trying to fetch pdf url from service worker");
+  try {
+    return await fetchPdfFromServiceWorker(url);
+  } catch (error) {
+    log("Fetch failed");
+    log(error);
   }
 
-  if (!pdf) {
-    pdf = await fetchPdfFromNewTab(url, false);
+  log("Trying to fetch pdf url from new tab at origin of pdf url");
+  try {
+    return await fetchPdfFromNewTab(url, true);
+  } catch (error) {
+    log("Fetch failed");
+    log(error);
   }
 
-  return pdf;
+  log("Trying to fetch pdf url from new tab at pdf url");
+  try {
+    return await fetchPdfFromNewTab(url, false);
+  } catch (error) {
+    log("Fetch failed");
+    log(error);
+  }
 }

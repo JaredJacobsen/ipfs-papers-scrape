@@ -6,7 +6,7 @@ export default async function textToMetadata(text) {
   const doi = extractDoi(text);
   if (!doi) throw "Cannot find paper DOI number";
 
-  console.log("Fetching metadata...");
+  log("Fetching metadata...");
   const metadata = await fetchMetadata(doi);
 
   displayPopupMessage(`Title: ${metadata.title}\nDOI: ${doi}`);

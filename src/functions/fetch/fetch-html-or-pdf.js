@@ -1,7 +1,7 @@
 import isPdfResponse from "../utils/is-pdf-response";
 
 export default async function fetchHtmlOrPdf(url) {
-  console.log("Fetching html or pdf");
+  log("Fetching html or pdf");
   try {
     const response = await fetch(url);
     if (response.ok) {
@@ -10,7 +10,7 @@ export default async function fetchHtmlOrPdf(url) {
         : { html: response.text() };
     }
   } catch (error) {
-    console.log(error);
+    log(error);
     return {};
   }
 }
