@@ -1,5 +1,12 @@
 import { map } from "lodash/fp";
 
+class Test {}
+
+let t = new Test();
+
+let r = t instanceof Test;
+r;
+
 const greet = () => {
   return "hey";
 };

@@ -1,4 +1,18 @@
-export default async function fetchPdfFromScihub(doi) {}
+import getOptions from "../utils/getOptions";
+import { default as fetch } from "../utils/wrappedFetch";
+
+export default async function fetchPdfFromScihub(doi) {
+  // const {scihubUrl} = await getOptions()
+  // const createTabUrl = scihubUrl + doi;
+  // const res = await fetch("${tabUrl}");
+  // const parser = new DOMParser();
+  // const url = parser
+  //   .parseFromString(await res.text(), "text/html")
+  //   .querySelector("iframe#pdf")
+  //   .src.replace("chrome-extension", "https")
+  //   .replace(/#.*/g, "");
+  // const response = await fetch(url);
+}
 
 // async function fetchPdf(metadata) {
 //   const fetchFromScihub = !metadata.url_for_pdf; //TODO check if settings allow scihub

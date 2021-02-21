@@ -3,6 +3,7 @@ import isPdfResponse from "./functions/utils/is-pdf-response";
 import log from "./functions/utils/log";
 import logTable from "./functions/utils/logTable";
 import sendMessage from "./functions/utils/send-message";
+import { default as fetch } from "./functions/utils/wrappedFetch";
 
 (async () => {
   try {
@@ -14,18 +15,14 @@ import sendMessage from "./functions/utils/send-message";
     logTable(args, "Script args", false);
 
     const response = await fetch((args && args.url) || location.href);
+    const type = isPdfResponse(response) ? "pdf" : "html";
+    const objectUrl = URL.createObjectURL(await response.blob());
+    const result = {
+      type,
+      objectUrl,
+    };
 
-    if (response.ok) {
-      const type = isPdfResponse(response) ? "pdf" : "html";
-      const result = {
-        type,
-        objectUrl: URL.createObjectURL(await response.blob()),
-      };
-
-      sendMessage({ id: "test", type: MESSAGE_TYPES.DONE, result });
-    } else {
-      throw "bad response status: " + response.status;
-    }
+    sendMessage({ id: "test", type: MESSAGE_TYPES.DONE, result });
   } catch (error) {
     log(error);
     sendMessage({ id: "test", type: MESSAGE_TYPES.DONE, error });

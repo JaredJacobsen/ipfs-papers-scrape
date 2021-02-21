@@ -10,6 +10,7 @@ import saveMetadata from "./metadata/save-metadata";
 import fetchPdf from "./fetch/fetch-pdf";
 import savePdf from "./pdf/save-pdf";
 import logTable from "./utils/logTable";
+import attempt from "./utils/attempt";
 
 export default async function scrapeActiveTab(ipfs) {
   const activeTab = await getActiveTab();
@@ -18,24 +19,25 @@ export default async function scrapeActiveTab(ipfs) {
   let pdf, doi;
   if (isHtmlDisplayingPdf(html)) {
     log("Analyzing pdf in active tab.");
-    try {
-      pdf = await fetchTabPdf(activeTab.id);
-    } catch (error) {
-      log("Failed to fetch pdf from active tab.");
-      log(error);
-    }
-    if (pdf) {
-      const text = await extractTextFromPdf(pdf);
-      doi = extractDoi(text);
-    }
+    pdf = attempt(
+      () => fetchTabPdf(activeTab),
+      "Failed to fetch pdf from active tab."
+    );
+    const text = await extractTextFromPdf(pdf);
+    doi = extractDoi(text);
   } else {
     log("Analyzing active tab html");
     doi = extractDoi(html);
   }
 
-  if (doi) {
-    log("DOI number: " + doi);
-    const metadata = await fetchMetadata(doi);
+  if (!doi) {
+    log("DOI number not found. Failed to scrape paper.");
+  } else {
+    log("Fetching metadata for DOI: " + doi);
+    const metadata = attempt(
+      () => fetchMetadata(doi),
+      "Failed to fetch metadata"
+    );
     logTable(metadata, "Unpaywall metadata");
     await saveMetadata(ipfs, metadata);
 
@@ -45,7 +47,5 @@ export default async function scrapeActiveTab(ipfs) {
     if (pdf) {
       await savePdf(ipfs, metadata.title, pdf);
     }
-  } else {
-    log("DOI number not found. Failed to scrape paper.");
   }
 }

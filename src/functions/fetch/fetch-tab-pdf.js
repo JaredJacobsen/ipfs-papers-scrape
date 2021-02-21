@@ -1,4 +1,5 @@
 import executeScript from "../utils/execute-script";
+import { default as fetch } from "../utils/wrappedFetch";
 
 export default async function fetchTabPdf(tabId, args) {
   const { objectUrl } = await executeScript({
@@ -9,8 +10,5 @@ export default async function fetchTabPdf(tabId, args) {
   });
 
   const response = await fetch(objectUrl);
-  if (response.ok) {
-    return response.blob();
-  }
-  throw "Bad response: " + JSON.stringify(response);
+  return response.blob();
 }

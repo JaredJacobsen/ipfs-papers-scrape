@@ -26,4 +26,6 @@ export default async function fetchPdfFromUrl(url) {
     log("Fetch failed");
     log(error);
   }
+
+  return null;
 }

@@ -2,6 +2,10 @@
 // import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
 
 export default async function extractTextFromPdf(pdf) {
+  if (!pdf) {
+    return null;
+  }
+
   try {
     pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
