@@ -1,4 +1,6 @@
 import executeScript from "../utils/execute-script";
+import log from "../utils/log";
+import { default as fetch } from "../utils/wrappedFetch";
 
 export default async function fetchTabHtmlOrPdf(tabId, args) {
   log("Fetching html or pdf from tab");
