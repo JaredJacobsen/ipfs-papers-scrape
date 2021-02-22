@@ -4,7 +4,7 @@ const defaultOptions = {
   scihubUrl: "https://sci-hub.do/",
   saveMetadata: true,
   saveToDevice: true,
-  deviceAppDataDirectory: "~/Documents/decent_papers/",
+  deviceAppDataDirectory: "/decent_papers/",
   saveToIpfs: true,
   ipfsAppDataDirectory: "/decent_papers/",
   saveToArweave: false,

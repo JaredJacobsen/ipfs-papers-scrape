@@ -7,6 +7,7 @@ export default async function saveMetadata(ipfs, metadata) {
   const {
     saveMetadata,
     saveToIpfs,
+    deviceAppDataDirectory,
     ipfsAppDataDirectory,
     saveToDevice,
   } = await getOptions();
@@ -32,7 +33,7 @@ export default async function saveMetadata(ipfs, metadata) {
 
   if (saveToDevice) {
     try {
-      await download(filename, data);
+      await download(deviceAppDataDirectory + filename, data);
     } catch (error) {
       log("Failed to save paper to device.");
     }

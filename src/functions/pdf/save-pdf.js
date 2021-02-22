@@ -4,7 +4,12 @@ import download from "../utils/download";
 import log from "../utils/log";
 
 export default async function savePdf(ipfs, title, pdf) {
-  const { saveToIpfs, ipfsAppDataDirectory, saveToDevice } = await getOptions();
+  const {
+    saveToIpfs,
+    deviceAppDataDirectory,
+    ipfsAppDataDirectory,
+    saveToDevice,
+  } = await getOptions();
 
   const filename = titleToFilename(title) + ".pdf";
 
@@ -26,7 +31,7 @@ export default async function savePdf(ipfs, title, pdf) {
 
   if (saveToDevice) {
     try {
-      await download("pdf_files/" + filename, pdf);
+      await download(deviceAppDataDirectory + "pdf_files/" + filename, pdf);
     } catch (error) {
       log("Failed to save paper to device.");
     }
