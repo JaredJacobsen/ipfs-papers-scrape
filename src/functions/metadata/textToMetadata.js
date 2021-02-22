@@ -4,7 +4,7 @@ import fetchMetadata from "./fetch-metadata";
 
 export default async function textToMetadata(text) {
   const doi = extractDoi(text);
-  if (!doi) throw "Cannot find paper DOI number";
+  if (!doi) throw new Error("Cannot find paper DOI number");
 
   log("Fetching metadata...");
   const metadata = await fetchMetadata(doi);
