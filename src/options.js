@@ -1,5 +1,5 @@
-import { reduce, kebabCase, forEach } from "lodash";
 import defaultOptions from "./defaultOptions";
+import { reduce, kebabCase, forEach } from "lodash";
 
 document.addEventListener("DOMContentLoaded", restore_options);
 document

@@ -1,3 +1,5 @@
+import log from "./log";
+
 export default function sendMessage(obj) {
   return new Promise((resolve) =>
     chrome.runtime.sendMessage(obj, (res) => {

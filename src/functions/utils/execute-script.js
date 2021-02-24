@@ -10,7 +10,8 @@ export default async function executeScript({ tabId, id, args, script, func }) {
       if (sender.tab.id === tabId && message.id === id) {
         if (message.type === MESSAGE_TYPES.ARGS) {
           return sendResponse(args);
-        } else if (message.type === MESSAGE_TYPES.DONE) {
+        }
+        if (message.type === MESSAGE_TYPES.DONE) {
           chrome.runtime.onMessage.removeListener(listener);
           if (message.error) {
             reject("executeScript failed. " + message.error);
@@ -21,7 +22,7 @@ export default async function executeScript({ tabId, id, args, script, func }) {
       return true; //keeps message port alive
     });
 
-    chrome.tabs.executeScript(
+    chrome.scripting.executeScript(
       script
         ? {
             tabId,

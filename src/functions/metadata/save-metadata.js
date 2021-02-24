@@ -2,6 +2,7 @@ import download from "../utils/download";
 import getOptions from "../utils/getOptions";
 import titleToFilename from "./title-to-filename";
 import log from "../utils/log";
+import { PAPER_METADATA_DIRECTORY } from "../../constants";
 
 export default async function saveMetadata(ipfs, metadata) {
   const {
@@ -16,7 +17,7 @@ export default async function saveMetadata(ipfs, metadata) {
     return false;
   }
 
-  const filename = "papers/" + titleToFilename(metadata.title);
+  const filename = PAPER_METADATA_DIRECTORY + titleToFilename(metadata.title);
   const data = JSON.stringify(metadata);
 
   if (saveToIpfs) {

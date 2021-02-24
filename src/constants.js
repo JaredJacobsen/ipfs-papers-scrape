@@ -1,8 +1,17 @@
-const SAVE_OPTIONS = { IPFS: "ipfs", DOWNLOADS: "downloads", BOTH: "both" };
+const GOOGLE_SCHOLAR_QUERY_BASE_URL = "https://scholar.google.com/scholar?q=";
+const FETCH_CID_BASE_URL = "ipfs://";
+const PAPER_METADATA_DIRECTORY = "papers/";
+const PDF_FILES_DIRECTORY = "pdf_files/";
 const MESSAGE_TYPES = {
   SCRAPE: "SCRAPE",
   ARGS: "ARGS",
   DONE: "DONE",
 };
 
-export { SAVE_OPTIONS, MESSAGE_TYPES };
+export {
+  GOOGLE_SCHOLAR_QUERY_BASE_URL,
+  FETCH_CID_BASE_URL,
+  PAPER_METADATA_DIRECTORY,
+  PDF_FILES_DIRECTORY,
+  MESSAGE_TYPES,
+};
